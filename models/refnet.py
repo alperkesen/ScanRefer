@@ -42,7 +42,7 @@ class RefNet(nn.Module):
         self.vgen = VotingModule(self.vote_factor, 256)
 
         # Vote clustering
-        self.cluster_module = ClusterModule(num_proposal, sampling)
+        self.cluster = ClusterModule(num_proposal, sampling)
 
         if use_brnet:
             # BRNet
@@ -103,14 +103,12 @@ class RefNet(nn.Module):
         data_dict["vote_xyz"] = xyz
         data_dict["vote_features"] = features
 
-        # --------- RPG Module ------------------
+        # --------- VOTE CLUSTER ----------------
 
-        if self.use_brnet:
-            self.rpg_module(
-            
+        data_dict = self.cluster(xyz, features, data_dict)
 
         # --------- PROPOSAL GENERATION ---------
-        data_dict = self.proposal(xyz, features, data_dict)
+        data_dict = self.proposal(data_dict)
 
         if not self.no_reference:
             #######################################
