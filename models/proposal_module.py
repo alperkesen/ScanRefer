@@ -34,7 +34,7 @@ class ProposalModule(nn.Module):
             nn.Conv1d(128,2+3+num_heading_bin*2+num_size_cluster*4+self.num_class,1)
         )
 
-    def forward(self, xyz, features, data_dict):
+    def forward(self, data_dict):
         """
         Args:
             data_dict
