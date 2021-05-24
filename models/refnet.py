@@ -7,6 +7,7 @@ import os
 sys.path.append(os.path.join(os.getcwd(), "lib")) # HACK add the lib folder
 from models.backbone_module import Pointnet2Backbone
 from models.voting_module import VotingModule
+from models.cluster_module import ClusterModule
 from models.proposal_module import ProposalModule
 from models.lang_module import LangModule
 from models.match_module import MatchModule
@@ -14,8 +15,8 @@ from models.match_module import MatchModule
 class RefNet(nn.Module):
     def __init__(self, num_class, num_heading_bin, num_size_cluster, mean_size_arr, 
     input_feature_dim=0, num_proposal=128, vote_factor=1, sampling="vote_fps",
-    use_lang_classifier=True, use_bidir=False, no_reference=False,
-    emb_size=300, hidden_size=256):
+                 use_lang_classifier=True, use_bidir=False, use_brnet=False,
+                 no_reference=False, emb_size=300, hidden_size=256):
         super().__init__()
 
         self.num_class = num_class
@@ -28,7 +29,8 @@ class RefNet(nn.Module):
         self.vote_factor = vote_factor
         self.sampling = sampling
         self.use_lang_classifier = use_lang_classifier
-        self.use_bidir = use_bidir      
+        self.use_bidir = use_bidir
+        self.use_brnet = use_brnet
         self.no_reference = no_reference
 
 
@@ -39,9 +41,17 @@ class RefNet(nn.Module):
         # Hough voting
         self.vgen = VotingModule(self.vote_factor, 256)
 
-        # Vote aggregation and object proposal
-        self.proposal = ProposalModule(num_class, num_heading_bin, num_size_cluster, mean_size_arr, num_proposal, sampling)
+        # Vote clustering
+        self.cluster_module = ClusterModule(num_proposal, sampling)
 
+        if use_brnet:
+            # BRNet
+            print("Using BRNet...") # to-do
+
+            self.proposal = ProposalModule(num_class, num_heading_bin, num_size_cluster, mean_size_arr)
+        else:
+            self.proposal = ProposalModule(num_class, num_heading_bin, num_size_cluster, mean_size_arr)
+            
         if not no_reference:
             # --------- LANGUAGE ENCODING ---------
             # Encode the input descriptions into vectors
@@ -92,6 +102,12 @@ class RefNet(nn.Module):
         features = features.div(features_norm.unsqueeze(1))
         data_dict["vote_xyz"] = xyz
         data_dict["vote_features"] = features
+
+        # --------- RPG Module ------------------
+
+        if self.use_brnet:
+            self.rpg_module(
+            
 
         # --------- PROPOSAL GENERATION ---------
         data_dict = self.proposal(xyz, features, data_dict)
