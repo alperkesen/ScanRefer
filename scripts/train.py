@@ -54,6 +54,7 @@ def get_model(args):
         num_proposal=args.num_proposals,
         use_lang_classifier=(not args.no_lang_cls),
         use_bidir=args.use_bidir,
+        use_brnet=args.use_brnet,
         no_reference=args.no_reference
     )
 
@@ -253,6 +254,7 @@ if __name__ == "__main__":
     parser.add_argument("--use_color", action="store_true", help="Use RGB color in input.")
     parser.add_argument("--use_normal", action="store_true", help="Use RGB color in input.")
     parser.add_argument("--use_multiview", action="store_true", help="Use multiview images.")
+    parser.add_argument("--use_brnet", action="store_true", help="Use BRNet for object detection.")
     parser.add_argument("--use_bidir", action="store_true", help="Use bi-directional GRU.")
     parser.add_argument("--use_pretrained", type=str, help="Specify the folder name containing the pretrained detection module.")
     parser.add_argument("--use_checkpoint", type=str, help="Specify the checkpoint root", default="")
