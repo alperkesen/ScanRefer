@@ -336,6 +336,8 @@ def compute_sem_cls_loss(data_dict):
     sem_cls_loss = criterion_sem_cls(data_dict['sem_cls_scores'].transpose(2,1), sem_cls_label) # (B,K)
     sem_cls_loss = torch.sum(sem_cls_loss * objectness_label)/(torch.sum(objectness_label)+1e-6)
 
+    return sem_cls_loss
+
 
 def loss_brnet(data_dict, config, detection=True, reference=True, use_lang_classifier=False):
     """ Loss functions
