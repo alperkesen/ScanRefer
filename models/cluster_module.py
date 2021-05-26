@@ -37,7 +37,9 @@ class ClusterModule(nn.Module):
             xyz: (B,K,3)
             features: (B,C,K)
         Returns:
-            scores: (B,num_proposal,2+3+NH*2+NS*4) 
+            aggregated_vote_xyz: (B, M, 3)
+            aggregated_vote_features: (B, M, 128)
+            aggregated_vote_inds: (B, M, )
         """
 
         # Farthest point sampling (FPS) on votes
