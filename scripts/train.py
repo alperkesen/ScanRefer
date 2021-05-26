@@ -16,7 +16,7 @@ from copy import deepcopy
 sys.path.append(os.path.join(os.getcwd())) # HACK add the root folder
 from data.scannet.model_util_scannet import ScannetDatasetConfig
 from lib.dataset import ScannetReferenceDataset
-from lib.solver import Solver
+from lib.solver import Solver, BRNetSolver
 from lib.config import CONF
 from models.refnet import RefNet
 
