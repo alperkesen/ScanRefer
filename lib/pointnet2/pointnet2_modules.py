@@ -32,7 +32,8 @@ class _PointnetSAModuleBase(nn.Module):
         self.mlps = None
 
     def forward(self, xyz: torch.Tensor,
-                features: torch.Tensor = None) -> (torch.Tensor, torch.Tensor):
+                features: torch.Tensor = None,
+                target_xyz: torch.Tensor = None) -> (torch.Tensor, torch.Tensor):
         r"""
         Parameters
         ----------
@@ -40,6 +41,8 @@ class _PointnetSAModuleBase(nn.Module):
             (B, N, 3) tensor of the xyz coordinates of the features
         features : torch.Tensor
             (B, N, C) tensor of the descriptors of the the features
+        target_xyz: torch.Tensor
+            # (B, M * K, 3) tensor of the xyz coordinates of target points
 
         Returns
         -------
@@ -52,10 +55,14 @@ class _PointnetSAModuleBase(nn.Module):
         new_features_list = []
 
         xyz_flipped = xyz.transpose(1, 2).contiguous()
-        new_xyz = pointnet2_utils.gather_operation(
-            xyz_flipped,
-            pointnet2_utils.furthest_point_sample(xyz, self.npoint)
-        ).transpose(1, 2).contiguous() if self.npoint is not None else None
+        if target_xyz is not None:
+            new_xyz = target_xyz.contiguous()
+        else:
+            new_xyz = pointnet2_utils.gather_operation(
+                xyz_flipped,
+                pointnet2_utils.furthest_point_sample(xyz, self.npoint)
+            ).transpose(1, 2).contiguous() if self.npoint is not None else None
+
 
         for i in range(len(self.groupers)):
             new_features = self.groupers[i](
