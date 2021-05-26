@@ -8,7 +8,9 @@ sys.path.append(os.path.join(os.getcwd(), "lib")) # HACK add the lib folder
 from models.backbone_module import Pointnet2Backbone
 from models.voting_module import VotingModule
 from models.cluster_module import ClusterModule
-from models.proposal_module import ProposalModule
+from models.proposal_module import ProposalModule, ClassAgnosticProposalModule
+from models.proposal_module import RefineProposalModule
+from models.rpg_module import RPGModule
 from models.lang_module import LangModule
 from models.match_module import MatchModule
 
@@ -43,15 +45,14 @@ class RefNet(nn.Module):
 
         # Vote clustering
         self.cluster = ClusterModule(num_proposal)
+        self.proposal = ProposalModule(num_class, num_heading_bin, num_size_cluster, mean_size_arr)
 
         if use_brnet:
-            # BRNet
             print("Using BRNet...") # to-do
+            self.proposal = ClassAgnosticProposalModule(num_class, num_heading_bin)
+            self.rpg_module = RPGModule()
+            self.refine = RefineProposalModule(num_class, num_heading_bin)
 
-            self.proposal = ProposalModule(num_class, num_heading_bin, num_size_cluster, mean_size_arr)
-        else:
-            self.proposal = ProposalModule(num_class, num_heading_bin, num_size_cluster, mean_size_arr)
-            
         if not no_reference:
             # --------- LANGUAGE ENCODING ---------
             # Encode the input descriptions into vectors
@@ -108,7 +109,23 @@ class RefNet(nn.Module):
         data_dict = self.cluster(xyz, features, data_dict)
 
         # --------- PROPOSAL GENERATION ---------
+
         data_dict = self.proposal(data_dict)
+
+        if self.use_brnet:
+            proposal_list = self.proposal.decode(data_dict)
+            data_dict["proposal"] = proposal_list
+            data_dict = self.rpg_module(data_dict)
+
+            # (B, 128+128, num_proposal)
+            fused_feats = torch.cat(
+                (data_dict['aggregated_vote_features'].permute(0, 2, 1).contiguous(),
+                 data_dict["rpg_features"]), dim=1)
+
+            data_dict["fused_feats"] = fused_feats
+
+            data_dict = self.refine(data_dict)
+
 
         if not self.no_reference:
             #######################################
