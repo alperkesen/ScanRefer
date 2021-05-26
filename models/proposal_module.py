@@ -214,6 +214,7 @@ class RefineProposalModule(nn.Module):
         # --------- PROPOSAL GENERATION ---------
         net = self.proposal(features)
         data_dict = self.decode_scores(net, data_dict, self.num_class, self.num_heading_bin)
+        data_dict = self.decode(data_dict, mode="rcnn")
 
         return data_dict
 
@@ -241,5 +242,38 @@ class RefineProposalModule(nn.Module):
         data_dict['refined_distance'] = refined_distance  # (B, N, 6)
         data_dict['refined_angle'] = refined_angle  # (B, N)
         data_dict['refined_sem_cls_scores'] = sem_cls_scores
+
+        return data_dict
+
+    def decode(self, data_dict, mode='rpn'):
+        assert mode in ['rpn', 'rcnn']
+        prefix = 'refined_' if mode == 'rcnn' else ''
+
+        distance = data_dict[prefix+'distance']  # (B, N, 6)
+        batch_size, num_proposal, _ = distance.shape
+
+        dir_angle = distance.new_zeros(batch_size, num_proposal, 1)
+
+        # decode bbox size
+        bbox_size = distance[..., 0:3] + distance[..., 3:6]
+        bbox_size = torch.clamp(bbox_size, min=0.1)
+
+        # decode bbox center
+        canonical_xyz = (distance[..., 3:6] -
+                         distance[..., 0:3]) / 2  # (batch_size, num_proposal, 3)
+
+        shape = canonical_xyz.shape
+
+        canonical_xyz = rotation_3d_in_axis(
+            canonical_xyz.view(-1, 3).unsqueeze(1),
+            dir_angle.view(-1),
+            axis=2
+        ).squeeze(1).view(shape)
+
+        ref_points = data_dict['ref_points']
+        center = ref_points - canonical_xyz
+
+        data_dict['center'] = center
+        data_dict['bbox_size'] = bbox_size
 
         return data_dict
