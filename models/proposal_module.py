@@ -228,7 +228,7 @@ class RefineProposalModule(nn.Module):
         num_proposal = net_transposed.shape[1]
 
         distance = data_dict['distance'] # (batch_size, num_proposal, 6)
-        angle = data_dict['proposal_list'][..., -1]
+        angle = data_dict['proposals'][..., -1]
 
         angle_delta = net_transposed[..., :1].squeeze(-1)
         distance_delta = net_transposed[..., 1:7]
