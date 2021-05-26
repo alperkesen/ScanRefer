@@ -29,7 +29,7 @@ class RPGModule(nn.Module):
             npoint=num_seed_points,
             radius=sa_radius,
             nsample=sa_num_sample,
-            mlp=[seed_feat_dim, 256, 128, 128],
+            mlp=[seed_feat_dim, 128, 64, 32],
             use_xyz=True,
             normalize_xyz=True
         )
