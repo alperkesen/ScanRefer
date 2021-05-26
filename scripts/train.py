@@ -128,21 +128,41 @@ def get_solver(args, dataloader):
     BN_DECAY_STEP = 20 if args.no_reference else None
     BN_DECAY_RATE = 0.5 if args.no_reference else None
 
-    solver = Solver(
-        model=model, 
-        config=DC, 
-        dataloader=dataloader, 
-        optimizer=optimizer, 
-        stamp=stamp, 
-        val_step=args.val_step,
-        detection=not args.no_detection,
-        reference=not args.no_reference, 
-        use_lang_classifier=not args.no_lang_cls,
-        lr_decay_step=LR_DECAY_STEP,
-        lr_decay_rate=LR_DECAY_RATE,
-        bn_decay_step=BN_DECAY_STEP,
-        bn_decay_rate=BN_DECAY_RATE
-    )
+    if args.use_brnet:
+        print("Using BRNet solver...")
+
+        solver = BRNetSolver(
+            model=model, 
+            config=DC, 
+            dataloader=dataloader, 
+            optimizer=optimizer, 
+            stamp=stamp, 
+            val_step=args.val_step,
+            detection=not args.no_detection,
+            reference=not args.no_reference, 
+            use_lang_classifier=not args.no_lang_cls,
+            lr_decay_step=LR_DECAY_STEP,
+            lr_decay_rate=LR_DECAY_RATE,
+            bn_decay_step=BN_DECAY_STEP,
+            bn_decay_rate=BN_DECAY_RATE
+        )
+    else:
+        solver = Solver(
+            model=model, 
+            config=DC, 
+            dataloader=dataloader, 
+            optimizer=optimizer, 
+            stamp=stamp, 
+            val_step=args.val_step,
+            detection=not args.no_detection,
+            reference=not args.no_reference, 
+            use_lang_classifier=not args.no_lang_cls,
+            lr_decay_step=LR_DECAY_STEP,
+            lr_decay_rate=LR_DECAY_RATE,
+            bn_decay_step=BN_DECAY_STEP,
+            bn_decay_rate=BN_DECAY_RATE
+        )
+
     num_params = get_num_params(model)
 
     return solver, num_params, root
