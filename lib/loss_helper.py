@@ -325,3 +325,93 @@ def get_loss(data_dict, config, detection=True, reference=True, use_lang_classif
     data_dict['loss'] = loss
 
     return loss, data_dict
+
+
+def compute_sem_cls_loss(data_dict):
+    object_assignment = data_dict['object_assignment']
+    objectness_label = data_dict['objectness_label'].float()
+
+    sem_cls_label = torch.gather(data_dict['sem_cls_label'], 1, object_assignment) # select (B,K) from (B,K2)
+    criterion_sem_cls = nn.CrossEntropyLoss(reduction='none')
+    sem_cls_loss = criterion_sem_cls(data_dict['sem_cls_scores'].transpose(2,1), sem_cls_label) # (B,K)
+    sem_cls_loss = torch.sum(sem_cls_loss * objectness_label)/(torch.sum(objectness_label)+1e-6)
+
+
+def loss_brnet(data_dict, config, detection=True, reference=True, use_lang_classifier=False):
+    """ Loss functions
+
+    Args:
+        data_dict: dict
+        config: dataset config instance
+        reference: flag (False/True)
+    Returns:
+        loss: pytorch scalar tensor
+        data_dict: dict
+    """
+
+    # Vote loss
+    vote_loss = compute_vote_loss(data_dict)
+
+    # Obj loss
+    objectness_loss, objectness_label, objectness_mask, object_assignment = compute_objectness_loss(data_dict)
+    num_proposal = objectness_label.shape[1]
+    total_num_proposal = objectness_label.shape[0]*objectness_label.shape[1]
+    data_dict['objectness_label'] = objectness_label
+    data_dict['objectness_mask'] = objectness_mask
+    data_dict['object_assignment'] = object_assignment
+    data_dict['pos_ratio'] = torch.sum(objectness_label.float().cuda())/float(total_num_proposal)
+    data_dict['neg_ratio'] = torch.sum(objectness_mask.float())/float(total_num_proposal) - data_dict['pos_ratio']
+
+    # Sem_cls_loss
+    sem_cls_loss = compute_sem_cls_loss(data_dict)
+
+    # Representative point loss: TODO
+
+    rep_loss = torch.zeros(1)[0].cuda()
+
+    # Refine loss: TODO
+    refine_loss = torch.zeros(1)[0].cuda()
+
+    if detection:
+        data_dict['vote_loss'] = vote_loss
+        data_dict['objectness_loss'] = objectness_loss
+        data_dict['sem_cls_loss'] = sem_cls_loss
+        data_dict['rep_loss'] = rep_loss
+        data_dict['refine_loss'] = refine_loss
+    else:
+        data_dict['vote_loss'] = torch.zeros(1)[0].cuda()
+        data_dict['objectness_loss'] = torch.zeros(1)[0].cuda()
+        data_dict['sem_cls_loss'] = torch.zeros(1)[0].cuda()
+        data_dict['rep_loss'] = torch.zeros(1)[0].cuda()
+        data_dict['refine_loss'] = torch.zeros(1)[0].cuda()
+
+    if reference:
+        # Reference loss
+        ref_loss, _, cluster_labels = compute_reference_loss(data_dict, config)
+        data_dict["cluster_labels"] = cluster_labels
+        data_dict["ref_loss"] = ref_loss
+    else:
+        # # Reference loss
+        # ref_loss, _, cluster_labels = compute_reference_loss(data_dict, config)
+        # data_dict["cluster_labels"] = cluster_labels
+        data_dict["cluster_labels"] = objectness_label.new_zeros(objectness_label.shape).cuda()
+        data_dict["cluster_ref"] = objectness_label.new_zeros(objectness_label.shape).float().cuda()
+
+        # store
+        data_dict["ref_loss"] = torch.zeros(1)[0].cuda()
+
+    if reference and use_lang_classifier:
+        data_dict["lang_loss"] = compute_lang_classification_loss(data_dict)
+    else:
+        data_dict["lang_loss"] = torch.zeros(1)[0].cuda()
+
+    # Final loss function
+    loss = data_dict['vote_loss'] + 0.5*data_dict['objectness_loss'] + 0.1*data_dict['sem_cls_loss'] \
+        + 0.1*data_dict["ref_loss"] + 0.1*data_dict["lang_loss"] + 0 * data_dict['refine_loss'] \
+        + 1 * data_dict["rep_loss"]
+    
+    loss *= 10 # amplify
+
+    data_dict['loss'] = loss
+
+    return loss, data_dict
