@@ -20,7 +20,7 @@ class RPGModule(nn.Module):
                  sa_radius=0.2,
                  sa_num_sample=16,
                  num_seed_points=1024):
-        super(RepPointRoIExtractor, self).__init__()
+        super(RPGModule, self).__init__()
         self.rep_type = rep_type # 'ray' or 'grid'
         self.density = density # '2'
         self.num_rep_points = density * 6 if rep_type == 'ray' else density ** 3
