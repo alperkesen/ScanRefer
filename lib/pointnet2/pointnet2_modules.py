@@ -107,7 +107,8 @@ class PointnetSAModuleMSG(_PointnetSAModuleBase):
             nsamples: List[int],
             mlps: List[List[int]],
             bn: bool = True,
-            use_xyz: bool = True, 
+            use_xyz: bool = True,
+            normalize_xyz: bool = False,
             sample_uniformly: bool = False
     ):
         super().__init__()
@@ -121,7 +122,9 @@ class PointnetSAModuleMSG(_PointnetSAModuleBase):
             radius = radii[i]
             nsample = nsamples[i]
             self.groupers.append(
-                pointnet2_utils.QueryAndGroup(radius, nsample, use_xyz=use_xyz, sample_uniformly=sample_uniformly)
+                pointnet2_utils.QueryAndGroup(radius, nsample, use_xyz=use_xyz,
+                                              normalize_xyz=normalize_xyz,
+                                              sample_uniformly=sample_uniformly)
                 if npoint is not None else pointnet2_utils.GroupAll(use_xyz)
             )
             mlp_spec = mlps[i]
@@ -156,7 +159,8 @@ class PointnetSAModule(PointnetSAModuleMSG):
             radius: float = None,
             nsample: int = None,
             bn: bool = True,
-            use_xyz: bool = True
+            use_xyz: bool = True,
+            normalize_xyz: bool = False
     ):
         super().__init__(
             mlps=[mlp],
@@ -164,7 +168,8 @@ class PointnetSAModule(PointnetSAModuleMSG):
             radii=[radius],
             nsamples=[nsample],
             bn=bn,
-            use_xyz=use_xyz
+            use_xyz=use_xyz,
+            normalize_xyz=normalize_xyz
         )
 
 
