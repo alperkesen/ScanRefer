@@ -292,9 +292,10 @@ def get_eval_brnet(data_dict, config, reference, use_lang_classifier=False, use_
     for i in range(pred_ref.shape[0]):
         # compute the iou
         pred_obb = np.zeros((7,))
-        pred_obb[0:3] = data_dict['center']
-        pred_obb[3:6] = data_dict['bbox_size']
-        pred_obb[6] = data_dict['refined_angle']
+        heading_angle = 0
+        pred_obb[0:3] = data_dict['center'].detach().cpu().numpy()
+        pred_obb[3:6] = data_dict['bbox_size'].detach().cpu().numpy()
+        pred_obb[6] = (heading_angle*-1).detach().cpu().numpy()
         
         gt_obb = config.param2obb(
             gt_center[i, gt_ref_idx, 0:3].detach().cpu().numpy(), 
