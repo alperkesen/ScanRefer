@@ -277,6 +277,12 @@ def get_eval_brnet(data_dict, config, reference, use_lang_classifier=False, use_
     # store the calibrated predictions and masks
     data_dict['cluster_ref'] = data_dict['cluster_ref'] * pred_masks
 
+    pred_masks = (objectness_preds_batch == 1).float()
+    label_masks = (objectness_labels_batch == 1).float()
+
+    data_dict["pred_masks"] = pred_masks
+    data_dict["label_masks"] = label_masks
+
     gt_ref = torch.argmax(data_dict["ref_box_label"], 1)
     gt_center = data_dict['center_label'] # (B,MAX_NUM_OBJ,3)
     gt_heading_class = data_dict['heading_class_label'] # B,K2
