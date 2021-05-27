@@ -349,6 +349,45 @@ def compute_sem_cls_loss(data_dict):
     return sem_cls_loss
 
 
+def huber_loss(error, delta=1.0):
+    abs_error = torch.abs(error)
+    quadratic = torch.clamp(abs_error, max=delta)
+    linear = (abs_error - quadratic)
+    loss = 0.5 * quadratic ** 2 + delta * linear
+    return loss
+
+
+def compute_refine_loss(data_dict, config):
+    num_heading_bin = config.num_heading_bin
+    gt_heading = data_dict['ref_heading_class_label'].cpu().numpy() # B
+    heading_angle = data_dict['refined_angle']
+
+    gt_heading = gt_heading % (2*np.pi)
+    heading_angle = heading_angle % (2*np.pi)
+
+    batch_size, num_proposal = heading_angle.shape
+
+    heading_delta = gt_heading - heading_angle
+    heading_delta_neg = (2*np.pi) + heading_delta
+    heading_delta_pos = heading_delta - (2*np.pi)
+
+    heading_delta_neg_indicator = torch.zeros((batch_size, num_proposal)).cuda()
+    heading_delta_neg_indicator[heading_angle < -np.pi] = 1
+
+    heading_delta_pos_indicator = torch.zeros((batch_size, num_proposal)).cuda()
+    heading_delta_pos_indicator[heading_delta > np.pi] = 1
+
+    heading_delta_dont_care_indicator = torch.zeros((batch_size, num_proposal)).cuda()
+    heading_delta_dont_care_indicator[(heading_delta >= -np.pi) * (heading_delta <= np.pi)] = 1
+
+    heading_delta = heading_delta*heading_delta_dont_care_indicator + \
+                    heading_delta_neg*heading_delta_neg_indicator + \
+                    heading_delta_pos*heading_delta_pos_indicator
+    heading_loss = huber_loss(heading_delta, delta=np.pi/num_heading_bin)  # (B, N)
+
+    return heading_loss
+
+
 def loss_brnet(data_dict, config, detection=True, reference=True, use_lang_classifier=False):
     """ Loss functions
 
@@ -381,8 +420,8 @@ def loss_brnet(data_dict, config, detection=True, reference=True, use_lang_class
 
     rep_loss = torch.zeros(1)[0].cuda()
 
-    # Refine loss: TODO
-    refine_loss = torch.zeros(1)[0].cuda()
+    # Refine loss:
+    refine_loss = compute_refine_loss(data_dict, config)
 
     if detection:
         data_dict['vote_loss'] = vote_loss
