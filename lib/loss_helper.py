@@ -385,7 +385,9 @@ def compute_refine_loss(data_dict, config):
                     heading_delta_pos*heading_delta_pos_indicator
     heading_loss = huber_loss(heading_delta, delta=np.pi/num_heading_bin)  # (B, N)
 
-    return heading_loss
+    dir_refine_loss = torch.sum(heading_loss * objectness_label) / (torch.sum(objectness_label) + 1e-6)
+
+    return dir_refine_loss
 
 
 def loss_brnet(data_dict, config, detection=True, reference=True, use_lang_classifier=False):
