@@ -185,7 +185,7 @@ def compute_box_and_sem_cls_loss(data_dict, config):
 
     return center_loss, heading_class_loss, heading_residual_normalized_loss, size_class_loss, size_residual_normalized_loss, sem_cls_loss
 
-def compute_reference_loss(data_dict, config):
+def compute_reference_loss(data_dict, config, use_brnet=False):
     """ Compute cluster reference loss
 
     Args:
@@ -199,16 +199,19 @@ def compute_reference_loss(data_dict, config):
     cluster_preds = data_dict["cluster_ref"] # (B, num_proposal)
 
     # predicted bbox
+
     pred_ref = data_dict['cluster_ref'].detach().cpu().numpy() # (B,)
-    pred_center = data_dict['center'].detach().cpu().numpy() # (B,K,3)
-    pred_heading_class = torch.argmax(data_dict['heading_scores'], -1) # B,num_proposal
-    pred_heading_residual = torch.gather(data_dict['heading_residuals'], 2, pred_heading_class.unsqueeze(-1)) # B,num_proposal,1
-    pred_heading_class = pred_heading_class.detach().cpu().numpy() # B,num_proposal
-    pred_heading_residual = pred_heading_residual.squeeze(2).detach().cpu().numpy() # B,num_proposal
-    pred_size_class = torch.argmax(data_dict['size_scores'], -1) # B,num_proposal
-    pred_size_residual = torch.gather(data_dict['size_residuals'], 2, pred_size_class.unsqueeze(-1).unsqueeze(-1).repeat(1,1,1,3)) # B,num_proposal,1,3
-    pred_size_class = pred_size_class.detach().cpu().numpy()
-    pred_size_residual = pred_size_residual.squeeze(2).detach().cpu().numpy() # B,num_proposal,3
+
+    if not use_brnet:
+        pred_center = data_dict['center'].detach().cpu().numpy() # (B,K,3)
+        pred_heading_class = torch.argmax(data_dict['heading_scores'], -1) # B,num_proposal
+        pred_heading_residual = torch.gather(data_dict['heading_residuals'], 2, pred_heading_class.unsqueeze(-1)) # B,num_proposal,1
+        pred_heading_class = pred_heading_class.detach().cpu().numpy() # B,num_proposal
+        pred_heading_residual = pred_heading_residual.squeeze(2).detach().cpu().numpy() # B,num_proposal
+        pred_size_class = torch.argmax(data_dict['size_scores'], -1) # B,num_proposal
+        pred_size_residual = torch.gather(data_dict['size_residuals'], 2, pred_size_class.unsqueeze(-1).unsqueeze(-1).repeat(1,1,1,3)) # B,num_proposal,1,3
+        pred_size_class = pred_size_class.detach().cpu().numpy()
+        pred_size_residual = pred_size_residual.squeeze(2).detach().cpu().numpy() # B,num_proposal,3
 
     # ground truth bbox
     gt_center = data_dict['ref_center_label'].cpu().numpy() # (B,3)
@@ -226,8 +229,15 @@ def compute_reference_loss(data_dict, config):
     labels = np.zeros((batch_size, num_proposals))
     for i in range(pred_ref.shape[0]):
         # convert the bbox parameters to bbox corners
-        pred_obb_batch = config.param2obb_batch(pred_center[i, :, 0:3], pred_heading_class[i], pred_heading_residual[i],
+        if not use_brnet:
+            pred_obb_batch = config.param2obb_batch(pred_center[i, :, 0:3], pred_heading_class[i], pred_heading_residual[i],
                     pred_size_class[i], pred_size_residual[i])
+        else:
+            pred_obb_batch = np.zeros((1, 7))
+            pred_obb_batch[:, 0:3] = data_dict['center'][i, :].detach().cpu().numpy()
+            pred_obb_batch[:, 3:6] = data_dict['bbox_size'][i, :].detach().cpu().numpy()
+            pred_obb_batch[:, 6] = np.zeros(pred_ref.shape[0])
+            
         pred_bbox_batch = get_3d_box_batch(pred_obb_batch[:, 3:6], pred_obb_batch[:, 6], pred_obb_batch[:, 0:3])
         ious = box3d_iou_batch(pred_bbox_batch, np.tile(gt_bbox_batch[i], (num_proposals, 1, 1)))
         labels[i, ious.argmax()] = 1 # treat the bbox with highest iou score as the gt
@@ -389,7 +399,7 @@ def loss_brnet(data_dict, config, detection=True, reference=True, use_lang_class
 
     if reference:
         # Reference loss
-        ref_loss, _, cluster_labels = compute_reference_loss(data_dict, config)
+        ref_loss, _, cluster_labels = compute_reference_loss(data_dict, config, use_brnet=True)
         data_dict["cluster_labels"] = cluster_labels
         data_dict["ref_loss"] = ref_loss
     else:
