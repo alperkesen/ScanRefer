@@ -296,7 +296,7 @@ def get_eval_brnet(data_dict, config, reference, use_lang_classifier=False, use_
         heading_angle = 0
         pred_obb[0:3] = data_dict['center'][i, pred_ref_idx].detach().cpu().numpy()
         pred_obb[3:6] = data_dict['bbox_size'][i, pred_ref_idx].detach().cpu().numpy()
-        pred_obb[6] = (heading_angle*-1).detach().cpu().numpy()
+        pred_obb[6] = (heading_angle*-1)
         
         gt_obb = config.param2obb(
             gt_center[i, gt_ref_idx, 0:3].detach().cpu().numpy(), 
