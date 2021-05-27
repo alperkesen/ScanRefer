@@ -91,8 +91,8 @@ BRNET_ITER_REPORT_TEMPLATE = """
 [loss] train_lang_loss: {train_lang_loss}
 [loss] train_objectness_loss: {train_objectness_loss}
 [loss] train_vote_loss: {train_vote_loss}
-[loss] train_refine_loss: {train_refine_loss}
-[loss] train_lang_acc: {train_lang_acc}
+[loss] train_rep_loss: {train_rep_loss}
+[loss] train_refine_acc: {train_refine_acc}
 [loss] train_lang_acc: {train_lang_acc}
 [sco.] train_ref_acc: {train_ref_acc}
 [sco.] train_obj_acc: {train_obj_acc}
