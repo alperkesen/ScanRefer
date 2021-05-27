@@ -357,9 +357,12 @@ def huber_loss(error, delta=1.0):
     return loss
 
 
-def compute_refine_loss(data_dict, config):
+def compute_dir_refine_loss(data_dict, config):
     num_heading_bin = config.num_heading_bin
-    gt_heading = data_dict['ref_heading_class_label'].cpu().numpy() # B
+
+    gt_heading_class = data_dict['ref_heading_class_label'].cpu().numpy() # B
+    gt_heading_residual = data_dict['ref_heading_residual_label'].cpu().numpy() # B
+    gt_heading = config.class2angle_batch(gt_heading_class, gt_heading_residual) # B
     heading_angle = data_dict['refined_angle']
 
     gt_heading = gt_heading % (2*np.pi)
@@ -461,9 +464,9 @@ def loss_brnet(data_dict, config, detection=True, reference=True, use_lang_class
         data_dict["lang_loss"] = torch.zeros(1)[0].cuda()
 
     # Final loss function
-    loss = data_dict['vote_loss'] + 0.5*data_dict['objectness_loss'] + 0.1*data_dict['sem_cls_loss'] \
-        + 0.1*data_dict["ref_loss"] + 0.1*data_dict["lang_loss"] + 0 * data_dict['refine_loss'] \
-        + 1 * data_dict["rep_loss"]
+    loss = data_dict['vote_loss'] + 1 * data_dict['objectness_loss'] + 0.1 * data_dict['sem_cls_loss'] \
+        + 0.1 * data_dict["ref_loss"] + 0.1 * data_dict["lang_loss"] + data_dict['refine_loss'] \
+        + data_dict["rep_loss"]
     
     loss *= 10 # amplify
 
