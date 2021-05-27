@@ -236,7 +236,7 @@ def compute_reference_loss(data_dict, config, use_brnet=False):
             pred_obb_batch = np.zeros((num_proposals, 7))
             pred_obb_batch[:, 0:3] = data_dict['center'][i, :].detach().cpu().numpy()
             pred_obb_batch[:, 3:6] = data_dict['bbox_size'][i, :].detach().cpu().numpy()
-            pred_obb_batch[:, 6] = np.zeros(batch_size)
+            pred_obb_batch[:, 6] = np.zeros(num_proposals)
 
         pred_bbox_batch = get_3d_box_batch(pred_obb_batch[:, 3:6], pred_obb_batch[:, 6], pred_obb_batch[:, 0:3])
         ious = box3d_iou_batch(pred_bbox_batch, np.tile(gt_bbox_batch[i], (num_proposals, 1, 1)))
