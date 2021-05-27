@@ -349,15 +349,7 @@ def compute_sem_cls_loss(data_dict):
     return sem_cls_loss
 
 
-def huber_loss(error, delta=1.0):
-    abs_error = torch.abs(error)
-    quadratic = torch.clamp(abs_error, max=delta)
-    linear = (abs_error - quadratic)
-    loss = 0.5 * quadratic ** 2 + delta * linear
-    return loss
-
-
-def compute_dir_refine_loss(data_dict, config):
+def compute_refine_loss(data_dict, config):
     num_heading_bin = config.num_heading_bin
 
     gt_heading_class = data_dict['ref_heading_class_label'].cpu().numpy() # B
@@ -392,7 +384,8 @@ def compute_dir_refine_loss(data_dict, config):
     box_loss_weights = objectness_label.float() / (torch.sum(objectness_label).float() + 1e-6)
     dir_refine_loss = torch.sum(heading_loss * box_loss_weights)
 
-    return dir_refine_loss
+
+    return size_refine_loss, dir_refine_loss
 
 
 def loss_brnet(data_dict, config, detection=True, reference=True, use_lang_classifier=False):
