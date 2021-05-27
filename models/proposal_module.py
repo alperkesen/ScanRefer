@@ -271,7 +271,7 @@ class RefineProposalModule(nn.Module):
         ).squeeze(1).view(shape)
 
         ref_points = data_dict['aggregated_vote_xyz']
-        center = ref_points - canonical_xyz
+        center = ref_points - canonical_xyz # (B, N, 3)
 
         data_dict['center'] = center
         data_dict['bbox_size'] = bbox_size
