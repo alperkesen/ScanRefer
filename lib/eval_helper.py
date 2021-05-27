@@ -263,7 +263,7 @@ def get_eval_brnet(data_dict, config, reference, use_lang_classifier=False, use_
     cluster_preds = preds
     cluster_labels = data_dict["cluster_labels"].float()
     cluster_labels *= label_masks
-    
+
     # compute classification scores
     corrects = torch.sum((cluster_preds == 1) * (cluster_labels == 1), dim=1).float()
     labels = torch.ones(corrects.shape[0]).cuda()
@@ -277,11 +277,8 @@ def get_eval_brnet(data_dict, config, reference, use_lang_classifier=False, use_
     # store the calibrated predictions and masks
     data_dict['cluster_ref'] = data_dict['cluster_ref'] * pred_masks
 
-    pred_masks = (objectness_preds_batch == 1).float()
-    label_masks = (objectness_labels_batch == 1).float()
-
-    data_dict["pred_masks"] = pred_masks
-    data_dict["label_masks"] = label_masks
+    data_dict["pred_mask"] = pred_masks
+    data_dict["label_mask"] = label_masks
 
     gt_ref = torch.argmax(data_dict["ref_box_label"], 1)
     gt_center = data_dict['center_label'] # (B,MAX_NUM_OBJ,3)
