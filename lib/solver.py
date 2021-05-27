@@ -16,7 +16,7 @@ from torch.optim.lr_scheduler import StepLR, MultiStepLR
 sys.path.append(os.path.join(os.getcwd(), "lib")) # HACK add the lib folder
 from lib.config import CONF
 from lib.loss_helper import get_loss, loss_brnet
-from lib.eval_helper import get_eval
+from lib.eval_helper import get_eval, get_eval_brnet
 from utils.eta import decode_eta
 from lib.pointnet2.pytorch_utils import BNMomentumScheduler
 
@@ -817,7 +817,7 @@ class BRNetSolver():
         self._running_log["loss"] = data_dict["loss"]
 
     def _eval(self, data_dict):
-        data_dict = get_eval(
+        data_dict = get_eval_brnet(
             data_dict=data_dict,
             config=self.config,
             reference=self.reference,
