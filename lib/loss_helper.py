@@ -414,7 +414,7 @@ def compute_refine_loss(data_dict, config):
     )
     distance_targets.clamp_(min=0)
 
-    dist1, _, _, _ = huber_loss(refined_distance, distance_targets)
+    dist1, _, _, _ = huber_loss(refined_distance - distance_targets, delta=0.15)
     size_refine_loss = torch.sum(dist1 * box_loss_weights.unsqueeze(-1).repeat(1, 1, 6))
 
     refine_loss = dir_refine_loss + 20 * size_refine_loss
