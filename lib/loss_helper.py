@@ -396,12 +396,12 @@ def compute_refine_loss(data_dict, config):
 
     refined_distance = data_dict['refined_distance']
     
-    distance_front  = size_res_targets[:, 0] - canonical_xyz[:, 0]
-    distance_left   = size_res_targets[:, 1] - canonical_xyz[:, 1]
-    distance_top    = size_res_targets[:, 2] - canonical_xyz[:, 2]
-    distance_back   = size_res_targets[:, 0] + canonical_xyz[:, 0]
-    distance_right  = size_res_targets[:, 1] + canonical_xyz[:, 1]
-    distance_bottom = size_res_targets[:, 2] + canonical_xyz[:, 2]
+    distance_front  = size_res_targets[:, :, 0] - canonical_xyz[:, :,  0]
+    distance_left   = size_res_targets[:, :, 1] - canonical_xyz[:, :,  1]
+    distance_top    = size_res_targets[:, :, 2] - canonical_xyz[:, :,  2]
+    distance_back   = size_res_targets[:, :, 0] + canonical_xyz[:, :,  0]
+    distance_right  = size_res_targets[:, :, 1] + canonical_xyz[:, :,  1]
+    distance_bottom = size_res_targets[:, :, 2] + canonical_xyz[:, :,  2]
 
     distance_targets = torch.cat(
         (distance_front.unsqueeze(-1),
