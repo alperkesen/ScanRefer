@@ -352,6 +352,10 @@ def compute_sem_cls_loss(data_dict):
 def compute_rep_loss(data_dict):
     # Compute rep angle
 
+    object_assignment = data_dict['object_assignment']
+    objectness_label = data_dict['objectness_label']
+    box_loss_weights = objectness_label.float() / (torch.sum(objectness_label).float() + 1e-6)
+
     heading_class_label = torch.gather(data_dict['heading_class_label'], 1, object_assignment) # select (B,K) from (B,K2)
     criterion_heading_class = nn.CrossEntropyLoss(reduction='none')
     heading_class_loss = criterion_heading_class(data_dict['heading_scores'].transpose(2,1), heading_class_label) # (B,K)
@@ -370,7 +374,7 @@ def compute_rep_loss(data_dict):
 
     # Compute rep distance
 
-    object_assignment = data_dict['object_assignment']
+
     size_res_targets = torch.gather(data_dict['size_residual_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
 
     center_targets = torch.gather(data_dict['center_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
