@@ -353,11 +353,12 @@ def compute_rep_loss(data_dict, config):
     # Compute rep angle
 
     num_heading_bin = config.num_heading_bin
-    batch_size = object_assignment.shape[0]
 
     object_assignment = data_dict['object_assignment']
     objectness_label = data_dict['objectness_label']
+
     box_loss_weights = objectness_label.float() / (torch.sum(objectness_label).float() + 1e-6)
+    batch_size = object_assignment.shape[0]
 
     heading_class_label = torch.gather(data_dict['heading_class_label'], 1, object_assignment) # select (B,K) from (B,K2)
     criterion_heading_class = nn.CrossEntropyLoss(reduction='none')
