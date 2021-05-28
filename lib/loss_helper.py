@@ -349,7 +349,7 @@ def compute_sem_cls_loss(data_dict):
     return sem_cls_loss
 
 
-def compute_rep_loss(data_dict, config):
+def compute_rep_loss(data_dict):
     # Compute rep angle
 
     heading_class_label = torch.gather(data_dict['heading_class_label'], 1, object_assignment) # select (B,K) from (B,K2)
@@ -397,7 +397,7 @@ def compute_rep_loss(data_dict, config):
     )
     distance_targets.clamp_(min=0)
 
-    dist1 = huber_loss(pred_distance - distance_targets, delta=0.15)
+    dist1 = huber_loss(pred_distance - distance_targets, delta=1.0)
     size_rep_loss = torch.sum(dist1 * box_loss_weights.unsqueeze(-1).repeat(1, 1, 6))
 
     rep_loss = 20 * size_rep_loss + dir_rep_loss
@@ -468,7 +468,7 @@ def compute_refine_loss(data_dict, config):
     )
     distance_targets.clamp_(min=0)
 
-    dist1 = huber_loss(refined_distance - distance_targets, delta=0.15)
+    dist1 = huber_loss(refined_distance - distance_targets, delta=1.0)
     size_refine_loss = torch.sum(dist1 * box_loss_weights.unsqueeze(-1).repeat(1, 1, 6))
 
     refine_loss = dir_refine_loss + 20 * size_refine_loss
@@ -504,7 +504,7 @@ def loss_brnet(data_dict, config, detection=True, reference=True, use_lang_class
     # Sem_cls_loss
     sem_cls_loss = compute_sem_cls_loss(data_dict)
 
-    # Representative point loss: TODO
+    # Representative point loss
 
     rep_loss = compute_rep_loss(data_dict)
 
