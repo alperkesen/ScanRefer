@@ -349,6 +349,60 @@ def compute_sem_cls_loss(data_dict):
     return sem_cls_loss
 
 
+def compute_rep_loss(data_dict, config):
+    # Compute rep angle
+
+    heading_class_label = torch.gather(data_dict['heading_class_label'], 1, object_assignment) # select (B,K) from (B,K2)
+    criterion_heading_class = nn.CrossEntropyLoss(reduction='none')
+    heading_class_loss = criterion_heading_class(data_dict['heading_scores'].transpose(2,1), heading_class_label) # (B,K)
+    heading_class_loss = torch.sum(heading_class_loss * objectness_label)/(torch.sum(objectness_label)+1e-6)
+
+    heading_residual_label = torch.gather(data_dict['heading_residual_label'], 1, object_assignment) # select (B,K) from (B,K2)
+    heading_residual_normalized_label = heading_residual_label / (np.pi/num_heading_bin)
+
+    # Ref: https://discuss.pytorch.org/t/convert-int-into-one-hot-format/507/3
+    heading_label_one_hot = torch.cuda.FloatTensor(batch_size, heading_class_label.shape[1], num_heading_bin).zero_()
+    heading_label_one_hot.scatter_(2, heading_class_label.unsqueeze(-1), 1) # src==1 so it's *one-hot* (B,K,num_heading_bin)
+    heading_residual_normalized_loss = huber_loss(torch.sum(data_dict['heading_residuals_normalized']*heading_label_one_hot, -1) - heading_residual_normalized_label, delta=1.0) # (B,K)
+    heading_residual_normalized_loss = torch.sum(heading_residual_normalized_loss*objectness_label)/(torch.sum(objectness_label)+1e-6)
+
+    dir_rep_loss = heading_residual_normalized_loss + 0.1 * heading_class_loss
+
+    # Compute rep distance
+
+    object_assignment = data_dict['object_assignment']
+    size_res_targets = torch.gather(data_dict['size_residual_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
+
+    center_targets = torch.gather(data_dict['center_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
+    aggregated_points = data_dict['aggregated_vote_xyz'][:,:,0:3]
+    canonical_xyz = aggregated_points - center_targets
+
+    pred_distance = data_dict['distance']
+    
+    distance_front  = size_res_targets[:, :, 0] - canonical_xyz[:, :,  0]
+    distance_left   = size_res_targets[:, :, 1] - canonical_xyz[:, :,  1]
+    distance_top    = size_res_targets[:, :, 2] - canonical_xyz[:, :,  2]
+    distance_back   = size_res_targets[:, :, 0] + canonical_xyz[:, :,  0]
+    distance_right  = size_res_targets[:, :, 1] + canonical_xyz[:, :,  1]
+    distance_bottom = size_res_targets[:, :, 2] + canonical_xyz[:, :,  2]
+
+    distance_targets = torch.cat(
+        (distance_front.unsqueeze(-1),
+         distance_left.unsqueeze(-1),
+         distance_top.unsqueeze(-1),
+         distance_back.unsqueeze(-1),
+         distance_right.unsqueeze(-1),
+         distance_bottom.unsqueeze(-1)),
+        dim=-1
+    )
+    distance_targets.clamp_(min=0)
+
+    dist1 = huber_loss(pred_distance - distance_targets, delta=0.15)
+    size_rep_loss = torch.sum(dist1 * box_loss_weights.unsqueeze(-1).repeat(1, 1, 6))
+
+    rep_loss = 20 * size_rep_loss + dir_rep_loss
+
+
 def compute_refine_loss(data_dict, config):
     # Compute refined angle loss
 
@@ -452,7 +506,7 @@ def loss_brnet(data_dict, config, detection=True, reference=True, use_lang_class
 
     # Representative point loss: TODO
 
-    rep_loss = torch.zeros(1)[0].cuda()
+    rep_loss = compute_rep_loss(data_dict)
 
     # Refine loss:
     refine_loss = compute_refine_loss(data_dict, config)
