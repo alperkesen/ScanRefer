@@ -410,6 +410,8 @@ def compute_rep_loss(data_dict, config):
 
     rep_loss = 20 * size_rep_loss + dir_rep_loss
 
+    return rep_loss
+
 
 def compute_refine_loss(data_dict, config):
     # Compute refined angle loss
