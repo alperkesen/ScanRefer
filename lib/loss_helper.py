@@ -386,6 +386,7 @@ def compute_refine_loss(data_dict, config):
     dir_refine_loss = torch.sum(heading_loss * box_loss_weights)
 
     # Compute refined distance loss
+
     object_assignment = data_dict['object_assignment']
     size_res_targets = data_dict['size_residual_label']
 
@@ -413,7 +414,8 @@ def compute_refine_loss(data_dict, config):
     )
     distance_targets.clamp_(min=0)
 
-    size_refine_loss = nn_distance(refined_distance, distance_targets, l1=True)
+    size_loss = nn_distance(refined_distance, distance_targets, l1=True)
+    size_refine_loss = torch.sum(size_loss * box_loss_weights.unsqueeze(-1).repeat(1, 1, 6))
 
     refine_loss = dir_refine_loss + 20 * size_refine_loss
 
