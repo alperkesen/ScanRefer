@@ -556,8 +556,8 @@ def loss_brnet(data_dict, config, detection=True, reference=True, use_lang_class
 
     # Final loss function
     loss = data_dict['vote_loss'] + 0.5 * data_dict['objectness_loss'] + 0.1 * data_dict['sem_cls_loss'] \
-        + 0.1 * data_dict["ref_loss"] + 0.1 * data_dict["lang_loss"] + data_dict['refine_loss'] \
-        + data_dict["rep_loss"]
+        + 0.1 * data_dict["ref_loss"] + 0.1 * data_dict["lang_loss"] + 0.5 * data_dict['refine_loss'] \
+        + 0.5 * data_dict["rep_loss"]
     
     loss *= 10 # amplify
 
