@@ -389,14 +389,9 @@ def compute_refine_loss(data_dict, config):
     object_assignment = data_dict['object_assignment']
     size_res_targets = torch.gather(data_dict['size_residual_label'],
                                     1, object_assignment.unsqueeze(-1).repeat(1,1,3)) # select (B,K,3) from (B,K2,3)
-    """
-    aggregated_points = [
-            data_dict['aggregated_points'][i]
-            for i in range()
-        ]
-    """
-    aggregated_points = data_dict['aggregated_vote_xyz'][:,:,0:3]
+
     center_targets = data_dict['center_label'][:,:,0:3]
+    aggregated_points = data_dict['aggregated_vote_xyz'][:,:center.targets.shape[1],0:3]
     canonical_xyz = aggregated_points - center_targets
 
     refined_distance = data_dict['refined_distance']
