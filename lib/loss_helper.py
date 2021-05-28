@@ -353,6 +353,8 @@ def compute_rep_loss(data_dict, config):
     # Compute rep angle
 
     num_heading_bin = config.num_heading_bin
+    batch_size = object_assignment.shape[0]
+
     object_assignment = data_dict['object_assignment']
     objectness_label = data_dict['objectness_label']
     box_loss_weights = objectness_label.float() / (torch.sum(objectness_label).float() + 1e-6)
