@@ -349,9 +349,10 @@ def compute_sem_cls_loss(data_dict):
     return sem_cls_loss
 
 
-def compute_rep_loss(data_dict):
+def compute_rep_loss(data_dict, config):
     # Compute rep angle
 
+    num_heading_bin = config.num_heading_bin
     object_assignment = data_dict['object_assignment']
     objectness_label = data_dict['objectness_label']
     box_loss_weights = objectness_label.float() / (torch.sum(objectness_label).float() + 1e-6)
@@ -510,7 +511,7 @@ def loss_brnet(data_dict, config, detection=True, reference=True, use_lang_class
 
     # Representative point loss
 
-    rep_loss = compute_rep_loss(data_dict)
+    rep_loss = compute_rep_loss(data_dict, config)
 
     # Refine loss:
     refine_loss = compute_refine_loss(data_dict, config)
