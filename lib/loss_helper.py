@@ -350,6 +350,8 @@ def compute_sem_cls_loss(data_dict):
 
 
 def compute_refine_loss(data_dict, config):
+    # Compute refined angle loss
+
     num_heading_bin = config.num_heading_bin
 
     gt_heading_class = data_dict['ref_heading_class_label'].cpu().numpy() # B
@@ -382,10 +384,45 @@ def compute_refine_loss(data_dict, config):
 
     objectness_label = data_dict['objectness_label']
     box_loss_weights = objectness_label.float() / (torch.sum(objectness_label).float() + 1e-6)
+
     dir_refine_loss = torch.sum(heading_loss * box_loss_weights)
 
+    # Compute refined distance loss
+    object_assignment = data_dict['object_assignment']
+    size_res_targets = torch.gather(data_dict['size_residual_label'],
+                                    1, object_assignment.unsqueeze(-1).repeat(1,1,3)) # select (B,K,3) from (B,K2,3)
+    aggregated_points = [
+            data_dict['aggregated_points'][i]
+            for i in range(len(gt_labels_3d))
+        ]
+    aggregated_points = data_dict['aggregated_vote_xyz'][:,:,0:3]
+    center_targets = data_dict['center_label'][:,:,0:3]
+    canonical_xyz = aggregated_points - center_targets
 
-    return size_refine_loss, dir_refine_loss
+    refined_distance = data_dict['refined_distance']
+    
+    distance_front  = size_res_targets[:, 0] - canonical_xyz[:, 0]
+    distance_left   = size_res_targets[:, 1] - canonical_xyz[:, 1]
+    distance_top    = size_res_targets[:, 2] - canonical_xyz[:, 2]
+    distance_back   = size_res_targets[:, 0] + canonical_xyz[:, 0]
+    distance_right  = size_res_targets[:, 1] + canonical_xyz[:, 1]
+    distance_bottom = size_res_targets[:, 2] + canonical_xyz[:, 2]
+
+    distance_targets = torch.cat(
+        (distance_front.unsqueeze(-1),
+         distance_left.unsqueeze(-1),
+         distance_top.unsqueeze(-1),
+         distance_back.unsqueeze(-1),
+         distance_right.unsqueeze(-1),
+         distance_bottom.unsqueeze(-1)),
+        dim=-1
+    )
+    
+    size_refine_loss = nn_distance(refined_distance, distance_targets, l1=True)
+
+    refine_loss = dir_refine_loss + 20 * size_refine_loss
+    
+    return refine_loss
 
 
 def loss_brnet(data_dict, config, detection=True, reference=True, use_lang_classifier=False):
