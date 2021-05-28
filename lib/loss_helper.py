@@ -408,7 +408,7 @@ def compute_rep_loss(data_dict, config):
     dist1 = huber_loss(pred_distance - distance_targets, delta=1.0)
     size_rep_loss = torch.sum(dist1 * box_loss_weights.unsqueeze(-1).repeat(1, 1, 6))
 
-    rep_loss = 20 * size_rep_loss + dir_rep_loss
+    rep_loss = size_rep_loss + 0.1 * dir_rep_loss
 
     return rep_loss
 
@@ -481,7 +481,7 @@ def compute_refine_loss(data_dict, config):
     dist1 = huber_loss(refined_distance - distance_targets, delta=1.0)
     size_refine_loss = torch.sum(dist1 * box_loss_weights.unsqueeze(-1).repeat(1, 1, 6))
 
-    refine_loss = dir_refine_loss + 20 * size_refine_loss
+    refine_loss = 0.1 * dir_refine_loss + size_refine_loss
 
     return refine_loss
 
@@ -555,7 +555,7 @@ def loss_brnet(data_dict, config, detection=True, reference=True, use_lang_class
         data_dict["lang_loss"] = torch.zeros(1)[0].cuda()
 
     # Final loss function
-    loss = data_dict['vote_loss'] + 1 * data_dict['objectness_loss'] + 0.1 * data_dict['sem_cls_loss'] \
+    loss = data_dict['vote_loss'] + 0.5 * data_dict['objectness_loss'] + 0.1 * data_dict['sem_cls_loss'] \
         + 0.1 * data_dict["ref_loss"] + 0.1 * data_dict["lang_loss"] + data_dict['refine_loss'] \
         + data_dict["rep_loss"]
     
