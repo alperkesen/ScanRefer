@@ -354,10 +354,9 @@ def compute_refine_loss(data_dict, config):
 
     num_heading_bin = config.num_heading_bin
 
-
-    gt_heading = config.class2angle_batch(gt_heading_class, gt_heading_residual) # B
     heading_angle = data_dict['refined_angle']
     batch_size, num_proposal = heading_angle.shape
+
     gt_heading = torch.cuda.FloatTensor(batch_size, num_proposal).zero_()
 
     gt_heading = gt_heading % (2*np.pi)
