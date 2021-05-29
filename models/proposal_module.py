@@ -130,11 +130,11 @@ class ClassAgnosticProposalModule(nn.Module):
         batch_size = net_transposed.shape[0]
         num_proposal = net_transposed.shape[1]
 
-        objectness_scores = net_transposed[:,:,0:2]
-        distance = net_transposed[:,:,2:8] # (batch_size, num_proposal, 3)
+        objectness_scores = net_transposed[:,:,0:2] # (batch_size, num_proposal, 2)
+        distance = net_transposed[:,:,2:8] # (batch_size, num_proposal, 6)
 
-        heading_scores = net_transposed[:,:,8:8+num_heading_bin]
-        heading_residuals_normalized = net_transposed[:,:,8+num_heading_bin:8+num_heading_bin*2]
+        heading_scores = net_transposed[:,:,8:8+num_heading_bin] # (batch_size, num_proposal, num_headin_bin)
+        heading_residuals_normalized = net_transposed[:,:,8+num_heading_bin:8+num_heading_bin*2] # (batch_size, num_proposal, num_headin_bin)
 
         sem_cls_scores = net_transposed[:,:,8+num_heading_bin*2:] # Bxnum_proposalx10
 
