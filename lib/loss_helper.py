@@ -53,7 +53,7 @@ def compute_vote_loss(data_dict):
     #   non-object point has no GT vote mask = 0, object point has mask = 1
     # vote_label: Use gather to select B,num_seed,9 from B,num_point,9
     #   with inds in shape B,num_seed,9 and 9 = GT_VOTE_FACTOR * 3
-    seed_gt_votes_mask = torch.gather(data_dict['vote_label_mask'], 1, seed_inds)
+    seed_gt_votes_mask = torch.gather(data_dict['vote_label_mask'], 1, seed_inds) 
     seed_inds_expand = seed_inds.view(batch_size,num_seed,1).repeat(1,1,3*GT_VOTE_FACTOR)
     seed_gt_votes = torch.gather(data_dict['vote_label'], 1, seed_inds_expand)
     seed_gt_votes += data_dict['seed_xyz'].repeat(1,1,3)
@@ -399,11 +399,8 @@ def get_distance_targets(data_dict):
     size_res_targets = torch.gather(data_dict['size_residual_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
 
     center_targets = torch.gather(data_dict['center_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
-    aggregated_points = [
-            data_dict['aggregated_vote_xyz'][i]
-            for i in range(data_dict['center_label'].shape[1])
-        ]
-    # aggregated_points = data_dict['aggregated_vote_xyz'][:,:,0:3]
+
+    aggregated_points = data_dict['aggregated_vote_xyz'][:,:,0:3]
     
     canonical_xyz = aggregated_points - center_targets
     
