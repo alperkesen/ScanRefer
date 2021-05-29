@@ -295,9 +295,9 @@ def get_eval_brnet(data_dict, config, reference, use_lang_classifier=False, use_
     for i in range(pred_ref.shape[0]):
         pred_ref_idx, gt_ref_idx = pred_ref[i], gt_ref[i]
         # compute the iou
-        pred_obb = torch.cat([data_dict["center"][i, pred_ref_idx, 0:3].detach().cpu().numpy(),
+        pred_obb = np.hstack([data_dict["center"][i, pred_ref_idx, 0:3].detach().cpu().numpy(),
                               data_dict["bbox_size"][i, pred_ref_idx].detach().cpu().numpy(),
-                              0])
+                              np.array([0])])
 
         gt_obb = config.param2obb(
             gt_center[i, gt_ref_idx, 0:3].detach().cpu().numpy(), 
