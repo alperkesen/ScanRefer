@@ -394,7 +394,7 @@ def compute_rep_loss(data_dict, config):
     return rep_loss
 
 
-def get_dir_targets(data_dict):
+def get_distance_targets(data_dict):
     object_assignment = data_dict['object_assignment']
     size_res_targets = torch.gather(data_dict['size_residual_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
 
