@@ -15,6 +15,7 @@ from lib.ap_helper import parse_predictions
 from lib.loss import SoftmaxRankingLoss
 from utils.box_util import get_3d_box, get_3d_box_batch, box3d_iou, box3d_iou_batch
 
+
 FAR_THRESHOLD = 0.6
 NEAR_THRESHOLD = 0.3
 GT_VOTE_FACTOR = 3 # number of GT votes per point
@@ -360,11 +361,15 @@ def compute_rep_loss(data_dict, config):
     box_loss_weights = objectness_label.float() / (torch.sum(objectness_label).float() + 1e-6)
     batch_size = object_assignment.shape[0]
 
+    # Compute heading class loss (Cross-entropy, reduction:sum, loss_weight=0.1)
+    
     heading_class_label = torch.gather(data_dict['heading_class_label'], 1, object_assignment) # select (B,K) from (B,K2)
     criterion_heading_class = nn.CrossEntropyLoss(reduction='none')
     heading_class_loss = criterion_heading_class(data_dict['heading_scores'].transpose(2,1), heading_class_label) # (B,K)
     heading_class_loss = torch.sum(heading_class_loss * objectness_label)/(torch.sum(objectness_label)+1e-6)
 
+    # Compute Residual loss (smoothl1, reduction:sum, loss_weight=1.0, beta=1.0)
+    
     heading_residual_label = torch.gather(data_dict['heading_residual_label'], 1, object_assignment) # select (B,K) from (B,K2)
     heading_residual_normalized_label = heading_residual_label / (np.pi/num_heading_bin)
 
@@ -376,89 +381,26 @@ def compute_rep_loss(data_dict, config):
 
     dir_rep_loss = heading_residual_normalized_loss + 0.1 * heading_class_loss
 
-    # Compute rep distance
+    # Compute rep distance (smoothl1, reduction:sum, box_weight=1.0, beta=0.15)
 
+    pred_distance = data_dict["distance"]
+    distance_targets = data_dict['distance_targets']
 
-    size_res_targets = torch.gather(data_dict['size_residual_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
-
-    center_targets = torch.gather(data_dict['center_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
-    aggregated_points = data_dict['aggregated_vote_xyz'][:,:,0:3]
-    canonical_xyz = aggregated_points - center_targets
-
-    pred_distance = data_dict['distance']
-    
-    distance_front  = size_res_targets[:, :, 0] - canonical_xyz[:, :,  0]
-    distance_left   = size_res_targets[:, :, 1] - canonical_xyz[:, :,  1]
-    distance_top    = size_res_targets[:, :, 2] - canonical_xyz[:, :,  2]
-    distance_back   = size_res_targets[:, :, 0] + canonical_xyz[:, :,  0]
-    distance_right  = size_res_targets[:, :, 1] + canonical_xyz[:, :,  1]
-    distance_bottom = size_res_targets[:, :, 2] + canonical_xyz[:, :,  2]
-
-    distance_targets = torch.cat(
-        (distance_front.unsqueeze(-1),
-         distance_left.unsqueeze(-1),
-         distance_top.unsqueeze(-1),
-         distance_back.unsqueeze(-1),
-         distance_right.unsqueeze(-1),
-         distance_bottom.unsqueeze(-1)),
-        dim=-1
-    )
-    distance_targets.clamp_(min=0)
-
-    dist1 = huber_loss(pred_distance - distance_targets, delta=1.0)
+    dist1 = huber_loss(pred_distance - distance_targets, delta=0.15)
     size_rep_loss = torch.sum(dist1 * box_loss_weights.unsqueeze(-1).repeat(1, 1, 6))
 
-    rep_loss = size_rep_loss + 0.1 * dir_rep_loss
+    rep_loss = size_rep_loss + dir_rep_loss
 
     return rep_loss
 
 
-def compute_refine_loss(data_dict, config):
-    # Compute refined angle loss
-
-    num_heading_bin = config.num_heading_bin
-
-    heading_angle = data_dict['refined_angle']
-    batch_size, num_proposal = heading_angle.shape
-
-    gt_heading = torch.cuda.FloatTensor(batch_size, num_proposal).zero_()
-
-    gt_heading = gt_heading % (2*np.pi)
-    heading_angle = heading_angle % (2*np.pi)
-
-    heading_delta = gt_heading - heading_angle
-    heading_delta_neg = (2*np.pi) + heading_delta
-    heading_delta_pos = heading_delta - (2*np.pi)
-
-    heading_delta_neg_indicator = torch.zeros((batch_size, num_proposal)).cuda()
-    heading_delta_neg_indicator[heading_angle < -np.pi] = 1
-
-    heading_delta_pos_indicator = torch.zeros((batch_size, num_proposal)).cuda()
-    heading_delta_pos_indicator[heading_delta > np.pi] = 1
-
-    heading_delta_dont_care_indicator = torch.zeros((batch_size, num_proposal)).cuda()
-    heading_delta_dont_care_indicator[(heading_delta >= -np.pi) * (heading_delta <= np.pi)] = 1
-
-    heading_delta = heading_delta*heading_delta_dont_care_indicator + \
-                    heading_delta_neg*heading_delta_neg_indicator + \
-                    heading_delta_pos*heading_delta_pos_indicator
-    heading_loss = huber_loss(heading_delta, delta=np.pi/num_heading_bin)  # (B, N)
-
-    objectness_label = data_dict['objectness_label']
-    box_loss_weights = objectness_label.float() / (torch.sum(objectness_label).float() + 1e-6)
-
-    dir_refine_loss = torch.sum(heading_loss * box_loss_weights)
-
-    # Compute refined distance loss
-
+def get_dir_targets(data_dict):
     object_assignment = data_dict['object_assignment']
     size_res_targets = torch.gather(data_dict['size_residual_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
 
     center_targets = torch.gather(data_dict['center_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
     aggregated_points = data_dict['aggregated_vote_xyz'][:,:,0:3]
     canonical_xyz = aggregated_points - center_targets
-
-    refined_distance = data_dict['refined_distance']
     
     distance_front  = size_res_targets[:, :, 0] - canonical_xyz[:, :,  0]
     distance_left   = size_res_targets[:, :, 1] - canonical_xyz[:, :,  1]
@@ -478,10 +420,36 @@ def compute_refine_loss(data_dict, config):
     )
     distance_targets.clamp_(min=0)
 
-    dist1 = huber_loss(refined_distance - distance_targets, delta=1.0)
+    return distance_targets
+
+
+def compute_refine_loss(data_dict, config):
+    # Compute refined angle loss
+
+    objectness_label = data_dict['objectness_label']
+    box_loss_weights = objectness_label.float() / (torch.sum(objectness_label).float() + 1e-6)
+    
+    num_heading_bin = config.num_heading_bin
+
+    heading_angle = data_dict['refined_angle']
+    batch_size, num_proposal = heading_angle.shape
+
+    dir_targets = torch.cuda.FloatTensor(batch_size, num_proposal).zero_()
+    heading_delta = heading_angle - dir_targets
+
+    heading_loss = huber_loss(heading_delta, delta=np.pi/num_heading_bin)  # (B, N)
+
+    dir_refine_loss = torch.sum(heading_loss * box_loss_weights)
+
+    # Compute refined distance loss
+
+    refined_distance = data_dict['refined_distance']
+    distance_targets = data_dict['distance_targets']
+
+    dist1 = huber_loss(refined_distance - distance_targets, delta=0.15)
     size_refine_loss = torch.sum(dist1 * box_loss_weights.unsqueeze(-1).repeat(1, 1, 6))
 
-    refine_loss = 0.1 * dir_refine_loss + size_refine_loss
+    refine_loss = dir_refine_loss + size_refine_loss
 
     return refine_loss
 
@@ -510,6 +478,7 @@ def loss_brnet(data_dict, config, detection=True, reference=True, use_lang_class
     data_dict['object_assignment'] = object_assignment
     data_dict['pos_ratio'] = torch.sum(objectness_label.float().cuda())/float(total_num_proposal)
     data_dict['neg_ratio'] = torch.sum(objectness_mask.float())/float(total_num_proposal) - data_dict['pos_ratio']
+    data_dict['distance_targets'] = get_distance_targets(data_dict)
 
     # Sem_cls_loss
     sem_cls_loss = compute_sem_cls_loss(data_dict)
@@ -556,8 +525,8 @@ def loss_brnet(data_dict, config, detection=True, reference=True, use_lang_class
 
     # Final loss function
     loss = data_dict['vote_loss'] + 0.5 * data_dict['objectness_loss'] + 0.1 * data_dict['sem_cls_loss'] \
-        + 0.1 * data_dict["ref_loss"] + 0.1 * data_dict["lang_loss"] + 0.5 * data_dict['refine_loss'] \
-        + 0.5 * data_dict["rep_loss"]
+        + 0.1 * data_dict["ref_loss"] + 0.1 * data_dict["lang_loss"] + data_dict['refine_loss'] \
+        + data_dict["rep_loss"]
     
     loss *= 10 # amplify
 
