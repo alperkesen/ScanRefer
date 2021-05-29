@@ -399,7 +399,11 @@ def get_distance_targets(data_dict):
     size_res_targets = torch.gather(data_dict['size_residual_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
 
     center_targets = torch.gather(data_dict['center_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
-    aggregated_points = data_dict['aggregated_vote_xyz'][:,:,0:3]
+    aggregated_points = [
+            bbox_preds['aggregated_vote_xyz'][i]
+            for i in range(data_dict['center_label'].shape[1])
+        ]
+    # aggregated_points = data_dict['aggregated_vote_xyz'][:,:,0:3]
     
     canonical_xyz = aggregated_points - center_targets
     
