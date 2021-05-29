@@ -131,7 +131,7 @@ class ClassAgnosticProposalModule(nn.Module):
         num_proposal = net_transposed.shape[1]
 
         objectness_scores = net_transposed[:,:,0:2] # (batch_size, num_proposal, 2)
-        distance = net_transposed[:,:,2:8] # (batch_size, num_proposal, 6)
+        distance = net_transposed[:,:,2:8].exp() # (batch_size, num_proposal, 6)
 
         heading_scores = net_transposed[:,:,8:8+num_heading_bin] # (batch_size, num_proposal, num_headin_bin)
         heading_residuals_normalized = net_transposed[:,:,8+num_heading_bin:8+num_heading_bin*2] # (batch_size, num_proposal, num_headin_bin)
