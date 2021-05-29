@@ -389,7 +389,7 @@ def compute_rep_loss(data_dict, config):
     dist1 = huber_loss(pred_distance - distance_targets, delta=0.15)
     size_rep_loss = torch.sum(dist1 * box_loss_weights.unsqueeze(-1).repeat(1, 1, 6))
 
-    rep_loss = size_rep_loss + dir_rep_loss
+    rep_loss = 20 * size_rep_loss + dir_rep_loss
 
     return rep_loss
 
@@ -400,6 +400,7 @@ def get_distance_targets(data_dict):
 
     center_targets = torch.gather(data_dict['center_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
     aggregated_points = data_dict['aggregated_vote_xyz'][:,:,0:3]
+    
     canonical_xyz = aggregated_points - center_targets
     
     distance_front  = size_res_targets[:, :, 0] - canonical_xyz[:, :,  0]
@@ -449,7 +450,7 @@ def compute_refine_loss(data_dict, config):
     dist1 = huber_loss(refined_distance - distance_targets, delta=0.15)
     size_refine_loss = torch.sum(dist1 * box_loss_weights.unsqueeze(-1).repeat(1, 1, 6))
 
-    refine_loss = dir_refine_loss + size_refine_loss
+    refine_loss = dir_refine_loss + 20 * size_refine_loss
 
     return refine_loss
 
