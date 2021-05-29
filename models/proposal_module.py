@@ -228,20 +228,20 @@ class RefineProposalModule(nn.Module):
         num_proposal = net_transposed.shape[1]
 
         distance = data_dict['distance'] # (batch_size, num_proposal, 6)
-        angle = data_dict['proposals'][..., -1]
+        angle = data_dict['proposals'][..., -1] # (B, N)
 
-        angle_delta = net_transposed[..., :1].squeeze(-1)
-        distance_delta = net_transposed[..., 1:7]
+        angle_delta = net_transposed[..., :1].squeeze(-1) # (B, N)
+        distance_delta = net_transposed[..., 1:7] # (B, N, 6)
         sem_cls_scores = net_transposed[:,:,7:] # Bxnum_proposalxnum_class
 
         refined_distance = distance + distance_delta # (B, N, 6)
 
-        refined_angle = angle + angle_delta
+        refined_angle = angle + angle_delta # (B, N)
         refined_angle[refined_angle > np.pi] -= 2 * np.pi
 
         data_dict['refined_distance'] = refined_distance  # (B, N, 6)
         data_dict['refined_angle'] = refined_angle  # (B, N)
-        data_dict['refined_sem_cls_scores'] = sem_cls_scores
+        data_dict['refined_sem_cls_scores'] = sem_cls_scores # (B, N, num_class)
 
         return data_dict
 
@@ -273,7 +273,7 @@ class RefineProposalModule(nn.Module):
         ref_points = data_dict['aggregated_vote_xyz']
         center = ref_points - canonical_xyz # (B, N, 3)
 
-        data_dict['center'] = center
-        data_dict['bbox_size'] = bbox_size
+        data_dict['center'] = center # (B, N, 3)
+        data_dict['bbox_size'] = bbox_size # (B, N, 3)
 
         return data_dict
