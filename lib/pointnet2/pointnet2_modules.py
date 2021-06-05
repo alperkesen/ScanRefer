@@ -221,7 +221,8 @@ class PointnetSAModuleVotes(nn.Module):
 
     def forward(self, xyz: torch.Tensor,
                 features: torch.Tensor = None,
-                inds: torch.Tensor = None) -> (torch.Tensor, torch.Tensor):
+                inds: torch.Tensor = None,
+                target_xyz: torch.Tensor = None) -> (torch.Tensor, torch.Tensor):
         r"""
         Parameters
         ----------
@@ -231,6 +232,8 @@ class PointnetSAModuleVotes(nn.Module):
             (B, C, N) tensor of the descriptors of the the features
         inds : torch.Tensor
             (B, npoint) tensor that stores index to the xyz points (values in 0-N-1)
+        target_xyz: torch.Tensor
+            # (B, M * K, 3) tensor of the xyz coordinates of target points
 
         Returns
         -------
@@ -243,13 +246,18 @@ class PointnetSAModuleVotes(nn.Module):
         """
 
         xyz_flipped = xyz.transpose(1, 2).contiguous()
-        if inds is None:
-            inds = pointnet2_utils.furthest_point_sample(xyz, self.npoint)
-        else:
+        if inds is not None:
             assert(inds.shape[1] == self.npoint)
-        new_xyz = pointnet2_utils.gather_operation(
-            xyz_flipped, inds
-        ).transpose(1, 2).contiguous() if self.npoint is not None else None
+            new_xyz = pointnet2_utils.gather_operation(
+                xyz_flipped, inds
+            ).transpose(1, 2).contiguous() if self.npoint is not None else None
+        elif target_xyz is not None:
+            new_xyz = target_xyz.contiguous()
+        else:
+            inds = pointnet2_utils.furthest_point_sample(xyz, self.npoint)
+            new_xyz = pointnet2_utils.gather_operation(
+                xyz_flipped, inds
+            ).transpose(1, 2).contiguous() if self.npoint is not None else None
 
         if not self.ret_unique_cnt:
             grouped_features, grouped_xyz = self.grouper(
