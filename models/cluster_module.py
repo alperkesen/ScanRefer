@@ -44,8 +44,6 @@ class ClusterModule(nn.Module):
             aggregated_vote_inds: (B, M, )
         """
 
-        assert sample_mod in ["vote", "seed"]
-
         # Farthest point sampling (FPS) on votes
         if self.sample_mod == "vote":
             xyz, features, fps_inds = self.vote_aggregation(xyz, features)
