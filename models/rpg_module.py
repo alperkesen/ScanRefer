@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.functional as F
 
-from lib.pointnet2.pointnet2_modules import PointnetSAModule
+from lib.pointnet2.pointnet2_modules import PointnetSAModuleVotes
 from utils.pc_utils import rotation_3d_in_axis
 
 
@@ -25,7 +25,7 @@ class RPGModule(nn.Module):
         self.density = density # '2'
         self.num_rep_points = density * 6 if rep_type == 'ray' else density ** 3
 
-        self.seed_aggregation = PointnetSAModule(
+        self.seed_aggregation = PointnetSAModuleVotes(
             npoint=num_seed_points,
             radius=sa_radius,
             nsample=sa_num_sample,
