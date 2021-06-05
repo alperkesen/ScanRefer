@@ -60,7 +60,7 @@ class RPGModule(nn.Module):
         # (batch_size, num_proposal * num_rep_points, 3)
         rep_points = rep_points.view(batch_size, -1, 3)
 
-        _, rep_features = self.seed_aggregation(seed_xyz, seed_features, target_xyz=rep_points)
+        _, rep_features, _ = self.seed_aggregation(seed_xyz, seed_features, target_xyz=rep_points)
         # (batch_size, mlp[-1], num_proposal, num_rep_points)
         rep_features = rep_features.view(batch_size, -1, num_proposal, self.num_rep_points)
         # (batch_size, mlp[-1], num_rep_points, num_proposal)
