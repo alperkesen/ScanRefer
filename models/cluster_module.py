@@ -8,17 +8,19 @@ import torch.nn.functional as F
 import numpy as np
 import os
 import sys
+import pointnet2_utils
 
 sys.path.append(os.path.join(os.getcwd(), "lib")) # HACK add the lib folder
 import lib.pointnet2.pointnet2_utils
 from lib.pointnet2.pointnet2_modules import PointnetSAModuleVotes
 
 class ClusterModule(nn.Module):
-    def __init__(self, num_proposal, seed_feat_dim=256):
+    def __init__(self, num_proposal, seed_feat_dim=256, use_brnet=False):
         super().__init__() 
 
         self.num_proposal = num_proposal
         self.seed_feat_dim = seed_feat_dim
+        self.sample_mod = "vote" if use_brnet == False else "seed"
 
         # Vote clustering
         self.vote_aggregation = PointnetSAModuleVotes( 
@@ -42,8 +44,15 @@ class ClusterModule(nn.Module):
             aggregated_vote_inds: (B, M, )
         """
 
+        assert sample_mod in ["vote", "seed"]
+
         # Farthest point sampling (FPS) on votes
-        xyz, features, fps_inds = self.vote_aggregation(xyz, features)
+        if self.sample_mod == "vote":
+            xyz, features, fps_inds = self.vote_aggregation(xyz, features)
+        else:
+            sample_inds = pointnet2_utils.furthest_point_sample(data_dict["seed_xyz"],
+                                                                self.num_proposal)
+            xyz, features, fps_inds = self.vote_aggregation(xyz, features, sample_inds)
         
         sample_inds = fps_inds
 

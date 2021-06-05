@@ -44,7 +44,7 @@ class RefNet(nn.Module):
         self.vgen = VotingModule(self.vote_factor, 256)
 
         # Vote clustering
-        self.cluster = ClusterModule(num_proposal)
+        self.cluster = ClusterModule(num_proposal, use_brnet=use_brnet)
         self.proposal = ProposalModule(num_class, num_heading_bin, num_size_cluster, mean_size_arr)
 
         if use_brnet:
