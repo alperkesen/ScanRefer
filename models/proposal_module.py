@@ -275,5 +275,6 @@ class RefineProposalModule(nn.Module):
 
         data_dict['center'] = center # (B, N, 3)
         data_dict['bbox_size'] = bbox_size # (B, N, 3)
+        data_dict['dir_angle'] = dir_angle # (B, N, 1)
 
         return data_dict
