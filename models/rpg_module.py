@@ -39,12 +39,12 @@ class RPGModule(nn.Module):
     def forward(self, data_dict):
         seed_xyz = data_dict["seed_xyz"]
         seed_features = data_dict["seed_features"]
-        proposals = data_dict["proposals"]
         ref_points = data_dict["aggregated_vote_xyz"]
         distance = data_dict["distance"]
+        data_dict["angle"] = distance.new_zeros(batch_size, num_proposal, 1)
         
         batch_size, num_proposal, _ = distance.shape
-        angle = proposals[..., -1]
+        angle = data_dict["angle"][..., -1]
         if self.rep_type == 'grid':
             # (B, N, num_rep_points, 3)
             rep_points = self._get_grid_based_rep_points(

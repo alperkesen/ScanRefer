@@ -113,8 +113,6 @@ class RefNet(nn.Module):
         data_dict = self.proposal(data_dict)
 
         if self.use_brnet:
-            proposal_list = self.proposal.decode(data_dict)
-            data_dict["proposals"] = proposal_list
             data_dict = self.rpg_module(data_dict)
 
             # (B, 128+128, num_proposal)
