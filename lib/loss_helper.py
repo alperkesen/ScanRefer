@@ -394,7 +394,7 @@ def compute_rep_loss(data_dict, config):
     return rep_loss
 
 
-def get_distance_targets(data_dict):
+def get_distance_targets(data_dict, config):
     object_assignment = data_dict['object_assignment']
     mean_size_arr = config.mean_size_arr
 
@@ -491,7 +491,7 @@ def loss_brnet(data_dict, config, detection=True, reference=True, use_lang_class
     data_dict['object_assignment'] = object_assignment
     data_dict['pos_ratio'] = torch.sum(objectness_label.float().cuda())/float(total_num_proposal)
     data_dict['neg_ratio'] = torch.sum(objectness_mask.float())/float(total_num_proposal) - data_dict['pos_ratio']
-    data_dict['distance_targets'] = get_distance_targets(data_dict)
+    data_dict['distance_targets'] = get_distance_targets(data_dict, config)
 
     # Sem_cls_loss
     sem_cls_loss = compute_sem_cls_loss(data_dict)
