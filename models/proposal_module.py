@@ -103,7 +103,7 @@ class ClassAgnosticProposalModule(nn.Module):
             nn.Conv1d(128,128,1, bias=False),
             nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Conv1d(128,2+6+num_heading_bin*2+self.num_class,1)
+            nn.Conv1d(128,2+6+num_heading_bin*2,1)
         )
 
     def forward(self, data_dict):
@@ -136,15 +136,12 @@ class ClassAgnosticProposalModule(nn.Module):
         heading_scores = net_transposed[:,:,8:8+num_heading_bin] # (batch_size, num_proposal, num_headin_bin)
         heading_residuals_normalized = net_transposed[:,:,8+num_heading_bin:8+num_heading_bin*2] # (batch_size, num_proposal, num_headin_bin)
 
-        sem_cls_scores = net_transposed[:,:,8+num_heading_bin*2:] # Bxnum_proposalx10
-
         # store
         data_dict['objectness_scores'] = objectness_scores
         data_dict['distance'] = distance
         data_dict['heading_scores'] = heading_scores # Bxnum_proposalxnum_heading_bin
         data_dict['heading_residuals_normalized'] = heading_residuals_normalized # Bxnum_proposalxnum_heading_bin (should be -1 to 1)
         data_dict['heading_residuals'] = heading_residuals_normalized * (np.pi/num_heading_bin) # Bxnum_proposalxnum_heading_bin
-        data_dict['sem_cls_scores'] = sem_cls_scores
 
         return data_dict
 
