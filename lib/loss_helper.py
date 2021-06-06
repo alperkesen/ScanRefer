@@ -397,7 +397,9 @@ def compute_rep_loss(data_dict, config):
 def get_distance_targets(data_dict, config):
     object_assignment = data_dict['object_assignment']
     mean_size_arr = config.mean_size_arr
+    num_size_cluster = config.num_size_cluster
     batch_size = object_assignment.shape[0]
+
 
     size_class_label = torch.gather(data_dict['size_class_label'], 1, object_assignment) # select (B,K) from (B,K2)
     # size_res_targets = torch.gather(data_dict['size_residual_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
