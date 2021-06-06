@@ -237,7 +237,7 @@ def compute_reference_loss(data_dict, config, use_brnet=False):
             pred_obb_batch = np.zeros((num_proposals, 7))
             pred_obb_batch[:, 0:3] = data_dict['center'][i, :].detach().cpu().numpy()
             pred_obb_batch[:, 3:6] = data_dict['bbox_size'][i, :].detach().cpu().numpy()
-            pred_obb_batch[:, 6] = np.zeros(num_proposals)
+            pred_obb_batch[:, 6] = data_dict['dir_angle'][i, :].detach().cpu().numpy()
 
         pred_bbox_batch = get_3d_box_batch(pred_obb_batch[:, 3:6], pred_obb_batch[:, 6], pred_obb_batch[:, 0:3])
         ious = box3d_iou_batch(pred_bbox_batch, np.tile(gt_bbox_batch[i], (num_proposals, 1, 1)))
@@ -381,22 +381,33 @@ def compute_rep_loss(data_dict, config):
 
     dir_rep_loss = heading_residual_normalized_loss + 0.1 * heading_class_loss
 
-    # Compute rep distance (smoothl1, reduction:sum, box_weight=1.0, beta=0.15)
+    # Compute rep distance (smoothl1, reduction:sum, loss_weight=1.0, beta=0.15)
 
     pred_distance = data_dict["distance"]
     distance_targets = data_dict['distance_targets']
 
     dist1 = huber_loss(pred_distance - distance_targets, delta=0.15)
-    size_rep_loss = torch.sum(dist1 * box_loss_weights.unsqueeze(-1).repeat(1, 1, 6))
+    size_rep_loss = torch.sum(dist1 * objectness_label)/(torch.sum(objectness_label)+1e-6)
 
-    rep_loss = 20 * size_rep_loss + dir_rep_loss
+    rep_loss = size_rep_loss + dir_rep_loss
 
     return rep_loss
 
 
 def get_distance_targets(data_dict):
     object_assignment = data_dict['object_assignment']
-    size_res_targets = torch.gather(data_dict['size_residual_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
+    mean_size_arr = config.mean_size_arr
+
+    size_class_label = torch.gather(data_dict['size_class_label'], 1, object_assignment) # select (B,K) from (B,K2)
+    # size_res_targets = torch.gather(data_dict['size_residual_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
+    size_residual_label = torch.gather(data_dict['size_residual_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3)) # select (B,K,3) from (B,K2,3)
+    size_label_one_hot = torch.cuda.FloatTensor(batch_size, size_class_label.shape[1], num_size_cluster).zero_()
+    size_label_one_hot.scatter_(2, size_class_label.unsqueeze(-1), 1) # src==1 so it's *one-hot* (B,K,num_size_cluster)
+    size_label_one_hot_tiled = size_label_one_hot.unsqueeze(-1).repeat(1,1,1,3) # (B,K,num_size_cluster,3)
+
+    mean_size_arr_expanded = torch.from_numpy(mean_size_arr.astype(np.float32)).cuda().unsqueeze(0).unsqueeze(0) # (1,1,num_size_cluster,3) 
+    mean_size_label = torch.sum(size_label_one_hot_tiled * mean_size_arr_expanded, 2) # (B,K,3)
+    size_res_targets = size_residual_label / mean_size_label # (B,K,3)
 
     center_targets = torch.gather(data_dict['center_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
 
@@ -451,7 +462,7 @@ def compute_refine_loss(data_dict, config):
     dist1 = huber_loss(refined_distance - distance_targets, delta=0.15)
     size_refine_loss = torch.sum(dist1 * box_loss_weights.unsqueeze(-1).repeat(1, 1, 6))
 
-    refine_loss = dir_refine_loss + 20 * size_refine_loss
+    refine_loss = dir_refine_loss + size_refine_loss
 
     return refine_loss
 
