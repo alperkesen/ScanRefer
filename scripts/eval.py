@@ -416,18 +416,34 @@ def eval_det(args):
         # feed
         with torch.no_grad():
             data = model(data)
-            _, data = get_loss(
+
+            if not args.use_brnet:
+                _, data = get_loss(
+                    data_dict=data, 
+                    config=DC, 
+                    detection=True,
+                    reference=False
+                )
+                data = get_eval(
+                    data_dict=data, 
+                    config=DC, 
+                    reference=False,
+                    post_processing=POST_DICT
+                )
+            else:
+                _, data = loss_brnet(
                 data_dict=data, 
                 config=DC, 
                 detection=True,
                 reference=False
-            )
-            data = get_eval(
-                data_dict=data, 
-                config=DC, 
-                reference=False,
-                post_processing=POST_DICT
-            )
+                )
+                data = get_eval_brnet(
+                    data_dict=data, 
+                    config=DC, 
+                    reference=False,
+                    post_processing=POST_DICT
+                )
+
 
         sem_acc.append(data["sem_acc"].item())
 
