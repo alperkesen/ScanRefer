@@ -18,7 +18,7 @@ sys.path.append(os.path.join(os.getcwd())) # HACK add the root folder
 from lib.config import CONF
 from lib.dataset import ScannetReferenceDataset
 from lib.solver import Solver
-from lib.ap_helper import APCalculator, parse_predictions, parse_groundtruths
+from lib.ap_helper import APCalculator, parse_predictions, parse_groundtruths, parse_predictions_brnet
 from lib.loss_helper import get_loss, loss_brnet
 from lib.eval_helper import get_eval, get_eval_brnet
 from models.refnet import RefNet
