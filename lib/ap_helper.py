@@ -217,8 +217,8 @@ def parse_predictions_brnet(end_points, config_dict):
     pred_center_upright_camera = pred_center.detach().cpu().numpy()
     for i in range(bsize):
         for j in range(num_proposal):
-            heading_angle = end_points['dir_angle'].detach().cpu().numpy()
-            box_size = end_points['bbox_size'].detach().cpu().numpy()
+            heading_angle = end_points['dir_angle'][i, j].detach().cpu().numpy()
+            box_size = end_points['bbox_size'][i, j].detach().cpu().numpy()
             corners_3d_upright_camera = get_3d_box(box_size, heading_angle, pred_center_upright_camera[i,j,:])
             pred_corners_3d_upright_camera[i,j] = corners_3d_upright_camera
 
