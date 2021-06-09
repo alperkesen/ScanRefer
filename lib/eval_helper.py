@@ -11,7 +11,7 @@ import os
 
 sys.path.append(os.path.join(os.getcwd(), "lib")) # HACK add the lib folder
 from utils.nn_distance import nn_distance, huber_loss
-from lib.ap_helper import parse_predictions
+from lib.ap_helper import parse_predictions, parse_predictions_brnet
 from lib.loss import SoftmaxRankingLoss
 from utils.box_util import get_3d_box, get_3d_box_batch, box3d_iou
 
@@ -246,7 +246,7 @@ def get_eval_brnet(data_dict, config, reference, use_lang_classifier=False, use_
     objectness_labels_batch = data_dict['objectness_label'].long()
 
     if post_processing:
-        _ = parse_predictions(data_dict, post_processing)
+        _ = parse_predictions_brnet(data_dict, post_processing)
         nms_masks = torch.LongTensor(data_dict['pred_mask']).cuda()
 
         # construct valid mask
