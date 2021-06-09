@@ -447,8 +447,13 @@ def eval_det(args):
 
         sem_acc.append(data["sem_acc"].item())
 
-        batch_pred_map_cls = parse_predictions(data, POST_DICT) 
-        batch_gt_map_cls = parse_groundtruths(data, POST_DICT) 
+        if not args.use_brnet:
+            batch_pred_map_cls = parse_predictions(data, POST_DICT) 
+            batch_gt_map_cls = parse_groundtruths(data, POST_DICT)
+        else:
+            batch_pred_map_cls = parse_predictions_brnet(data, POST_DICT) 
+            batch_gt_map_cls = parse_groundtruths(data, POST_DICT)
+
         for ap_calculator in AP_CALCULATOR_LIST:
             ap_calculator.step(batch_pred_map_cls, batch_gt_map_cls)
 
