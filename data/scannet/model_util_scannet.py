@@ -224,7 +224,7 @@ class ScannetDatasetConfig(object):
 
         center = ref_points - canonical_xyz # (B, N, 3)
 
-        obb = np.zeros((heading_class.shape[0], 7))
+        obb = np.zeros((center.shape[1], 7))
         obb[:, 0:3] = center.detach().cpu().numpy()
         obb[:, 3:6] = box_size.detach().cpu().numpy()
         obb[:, 6] = (dir_angle * -1).detach().cpu().numpy()
