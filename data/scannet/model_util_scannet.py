@@ -2,6 +2,7 @@
 Modified from: https://github.com/facebookresearch/votenet/blob/master/scannet/model_util_scannet.py
 """
 
+import torch
 import numpy as np
 import sys
 import os
