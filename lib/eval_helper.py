@@ -295,13 +295,8 @@ def get_eval_brnet(data_dict, config, reference, use_lang_classifier=False, use_
     for i in range(pred_ref.shape[0]):
         pred_ref_idx, gt_ref_idx = pred_ref[i], gt_ref[i]
         # compute the iou
-        distance = data_dict['distance']
-        center = data_dict['aggregated_vote_xyz'] - (distance[..., 3:6] - \
-                                                     distance[..., 0:3]) / 2
-        bbox_size = distance[..., 0:3] + distance[..., 3:6]
-        pred_obb = np.hstack([center[i, pred_ref_idx, 0:3].detach().cpu().numpy(),
-                              bbox_size[i, pred_ref_idx].detach().cpu().numpy(),
-                              data_dict["dir_angle"][i, pred_ref_idx].detach().cpu().numpy()])
+        pred_obb = config.dist2obb(data_dict['distance'][i, pred_ref_idx, 0:3],
+                                   data_dict['aggregated_vote_xyz'][i, pred_ref_idx, 0:3])
 
         gt_obb = config.param2obb(
             gt_center[i, gt_ref_idx, 0:3].detach().cpu().numpy(), 

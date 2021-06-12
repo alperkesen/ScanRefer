@@ -144,7 +144,7 @@ class ClassAgnosticProposalModule(nn.Module):
         data_dict['heading_residuals'] = heading_residuals_normalized * (np.pi/num_heading_bin) # Bxnum_proposalxnum_heading_bin
 
         return data_dict
-
+j
 
 class RefineProposalModule(nn.Module):
     def __init__(self, num_class, num_heading_bin):
@@ -178,7 +178,6 @@ class RefineProposalModule(nn.Module):
         # --------- PROPOSAL GENERATION ---------
         net = self.proposal(features)
         data_dict = self.decode_scores(net, data_dict, self.num_class, self.num_heading_bin)
-        data_dict = self.decode(data_dict, mode="rcnn")
 
         return data_dict
 
@@ -206,39 +205,5 @@ class RefineProposalModule(nn.Module):
         data_dict['refined_distance'] = refined_distance  # (B, N, 6)
         data_dict['refined_angle'] = refined_angle  # (B, N)
         data_dict['sem_cls_scores'] = sem_cls_scores # (B, N, num_class)
-
-        return data_dict
-
-    def decode(self, data_dict, mode='rpn'):
-        assert mode in ['rpn', 'rcnn']
-        prefix = 'refined_' if mode == 'rcnn' else ''
-
-        distance = data_dict[prefix+'distance']  # (B, N, 6)
-        batch_size, num_proposal, _ = distance.shape
-
-        dir_angle = distance.new_zeros(batch_size, num_proposal, 1)
-
-        # decode bbox size
-        bbox_size = distance[..., 0:3] + distance[..., 3:6]
-        bbox_size = torch.clamp(bbox_size, min=0.1)
-
-        # decode bbox center
-        canonical_xyz = (distance[..., 3:6] -
-                         distance[..., 0:3]) / 2  # (batch_size, num_proposal, 3)
-
-        shape = canonical_xyz.shape
-
-        canonical_xyz = rotation_3d_in_axis(
-            canonical_xyz.view(-1, 3).unsqueeze(1),
-            dir_angle.view(-1),
-            axis=2
-        ).squeeze(1).view(shape)
-
-        ref_points = data_dict['aggregated_vote_xyz']
-        center = ref_points - canonical_xyz # (B, N, 3)
-
-        data_dict['center'] = center # (B, N, 3)
-        data_dict['bbox_size'] = bbox_size # (B, N, 3)
-        data_dict['dir_angle'] = dir_angle # (B, N, 1)
 
         return data_dict

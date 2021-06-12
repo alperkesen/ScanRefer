@@ -89,7 +89,7 @@ class RPGModule(nn.Module):
         local_points = torch.stack(local_points, dim=1)  # (B*N, density, 6, 3)
         local_points = local_points.transpose(1,2).contiguous()  # (B*N, 6, density, 3)
         local_points = local_points.reshape(-1, self.num_rep_points, 3)  # (B*N, num_rep_points, 3)
-        local_points_rotated = rotation_3d_in_axis(local_points, angle.view(-1), axis=2)
+        local_points_rotated = rotation_3d_in_axis(local_points, angle.view(-1), axis=1)
         center = center.reshape(batch_size*num_proposal, 1, 3)  # (B*N, num_rep_points, 3)
         global_points = local_points_rotated + center  # (B*N, num_rep_points, 3)
         # (B, N, num_rep_points, 3)
