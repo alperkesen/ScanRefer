@@ -144,7 +144,7 @@ class ClassAgnosticProposalModule(nn.Module):
         data_dict['heading_residuals'] = heading_residuals_normalized * (np.pi/num_heading_bin) # Bxnum_proposalxnum_heading_bin
 
         return data_dict
-j
+
 
 class RefineProposalModule(nn.Module):
     def __init__(self, num_class, num_heading_bin):
