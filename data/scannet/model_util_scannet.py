@@ -9,7 +9,7 @@ import os
 
 sys.path.append(os.path.join(os.getcwd(), os.pardir, "lib")) # HACK add the lib folder
 from lib.config import CONF
-from utils.pc_util import rotation_3d_in_axis
+from utils.pc_utils import rotation_3d_in_axis
 
 def in_hull(p, hull):
     from scipy.spatial import Delaunay
