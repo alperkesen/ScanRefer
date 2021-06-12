@@ -234,7 +234,7 @@ def compute_reference_loss(data_dict, config, use_brnet=False):
             pred_obb_batch = config.param2obb_batch(pred_center[i, :, 0:3], pred_heading_class[i], pred_heading_residual[i],
                     pred_size_class[i], pred_size_residual[i])
         else:
-            pred_obb_batch = config.dist2obb_batch(data_dict['distance'][i, :, 0:3],
+            pred_obb_batch = config.dist2obb_batch(data_dict['distance'][i, :, 0:6],
                                                    data_dict['aggregated_vote_xyz'][i, :, 0:3])
 
         pred_bbox_batch = get_3d_box_batch(pred_obb_batch[:, 3:6], pred_obb_batch[:, 6], pred_obb_batch[:, 0:3])
