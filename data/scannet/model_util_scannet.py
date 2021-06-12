@@ -203,7 +203,7 @@ class ScannetDatasetConfig(object):
 
     def dist2obb_batch(self, distance, ref_points):
         batch_size, num_proposal, _ = distance.shape # (B, N, 6)
-        dir_angle = distance.new_zeros(batch_size, num_proposal, 1)
+        dir_angle = distance.new_zeros(num_proposal, 1)
 
         # decode bbox size
 
