@@ -173,7 +173,7 @@ class ScannetDatasetConfig(object):
         return obb
 
     def dist2obb(self, distance, ref_points):
-        dir_angle = torch.tensor([0.0])
+        dir_angle = distance.new_zeros(1)
 
         # decode bbox size
 
@@ -196,14 +196,14 @@ class ScannetDatasetConfig(object):
         obb = np.zeros((7,))
 
         obb[0:3] = center.detach().cpu().numpy()
-        obb[3:6] = box_size.detach().cpu().numpy()
-        obb[6] = (heading_angle*-1).detach().cpu().numpy()
+        obb[3:6] = bbox_size.detach().cpu().numpy()
+        obb[6] = (dir_angle*-1).detach().cpu().numpy()
 
         return obb
 
     def dist2obb_batch(self, distance, ref_points):
-        batch_size, num_proposal, _ = distance.shape # (B, N, 6)
-        dir_angle = distance.new_zeros(num_proposal, 1)
+        num_proposal, _ = distance.shape # (B, N, 6)
+        dir_angle = distance.new_zeros(num_proposal)
 
         # decode bbox size
 
@@ -224,9 +224,9 @@ class ScannetDatasetConfig(object):
 
         center = ref_points - canonical_xyz # (B, N, 3)
 
-        obb = np.zeros((center.shape[1], 7))
+        obb = np.zeros((center.shape[0], 7))
         obb[:, 0:3] = center.detach().cpu().numpy()
-        obb[:, 3:6] = box_size.detach().cpu().numpy()
+        obb[:, 3:6] = bbox_size.detach().cpu().numpy()
         obb[:, 6] = (dir_angle * -1).detach().cpu().numpy()
 
         return obb
