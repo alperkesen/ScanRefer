@@ -188,7 +188,7 @@ class ScannetDatasetConfig(object):
         canonical_xyz = rotation_3d_in_axis(
             canonical_xyz.view(-1, 3).unsqueeze(1),
             dir_angle.view(-1),
-            axis=1
+            axis=2
         ).squeeze(1).view(shape)
 
         center = ref_points - canonical_xyz # (B, N, 3)
@@ -219,7 +219,7 @@ class ScannetDatasetConfig(object):
         canonical_xyz = rotation_3d_in_axis(
             canonical_xyz.view(-1, 3).unsqueeze(1),
             dir_angle.view(-1),
-            axis=1
+            axis=2
         ).squeeze(1).view(shape)
 
         center = ref_points - canonical_xyz # (B, N, 3)
