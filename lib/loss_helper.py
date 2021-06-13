@@ -395,12 +395,17 @@ def compute_rep_loss(data_dict, config):
 def get_distance_targets(data_dict, config):
     object_assignment = data_dict['object_assignment']
 
-    size_res_targets = torch.gather(data_dict['size_residual_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
+    gt_size_class = data_dict['size_class_label']
+    gt_size_residual = data_dict['size_residual_label']
+
+    size_res_targets = torch.from_numpy(
+        config.class2size_batch(gt_size_class.int().detach().cpu().numpy(),
+                                gt_size_residual.detach().cpu().numpy())).cuda()
+    size_res_targets = torch.gather(size_res_targets, 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
     size_res_targets /= 2
 
     center_targets = torch.gather(data_dict['center_label'], 1, object_assignment.unsqueeze(-1).repeat(1,1,3))
-
-    aggregated_points = data_dict['aggregated_vote_xyz'][:,:,0:3]
+    aggregated_points = data_dict['aggregated_vote_xyz']
     
     canonical_xyz = aggregated_points - center_targets
     
