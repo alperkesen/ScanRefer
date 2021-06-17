@@ -18,7 +18,8 @@ class RefNet(nn.Module):
     def __init__(self, num_class, num_heading_bin, num_size_cluster, mean_size_arr, 
     input_feature_dim=0, num_proposal=128, vote_factor=1, sampling="vote_fps",
                  use_lang_classifier=True, use_bidir=False, use_brnet=False,
-                 no_reference=False, emb_size=300, hidden_size=256):
+                 use_cross_attn=False, use_dgcnn=False, no_reference=False,
+                 emb_size=300, hidden_size=256):
         super().__init__()
 
         self.num_class = num_class
@@ -33,6 +34,8 @@ class RefNet(nn.Module):
         self.use_lang_classifier = use_lang_classifier
         self.use_bidir = use_bidir
         self.use_brnet = use_brnet
+        self.use_cross_attn = use_cross_attn
+        self.use_dgcnn = use_dgcnn
         self.no_reference = no_reference
 
 
@@ -61,7 +64,7 @@ class RefNet(nn.Module):
 
             # --------- PROPOSAL MATCHING ---------
             # Match the generated proposals and select the most confident ones
-            self.match = MatchModule(num_proposals=num_proposal, lang_size=(1 + int(self.use_bidir)) * hidden_size)
+            self.match = MatchModule(num_proposals=num_proposal, lang_size=(1 + int(self.use_bidir)) * hidden_size, use_cross_attn=use_cross_attn, use_dgcnn=use_dgcnn)
 
     def forward(self, data_dict):
         """ Forward pass of the network
