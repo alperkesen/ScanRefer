@@ -61,7 +61,7 @@ class MatchModule(nn.Module):
         # DGCNN
 
         if self.use_dgcnn:
-            graph_output = self.graph(features) # batch_size, hidden_size, num_proposals
+            features = self.graph(features) # batch_size, hidden_size, num_proposals
 
         # dimension reduction for language features
         if self.use_cross_attn:
@@ -69,7 +69,7 @@ class MatchModule(nn.Module):
             lang_feat = self.cross(lang_feat) # batch_size, hidden_size, num_proposals
 
             # cross attention
-            attention = torch.bmm(graph_output.permute(0, 2, 1).contiguous(), lang_feat) # batch_size, num_proposals, num_proposals
+            attention = torch.bmm(features.permute(0, 2, 1).contiguous(), lang_feat) # batch_size, num_proposals, num_proposals
             attention = nn.functional.softmax(attention, dim=2)
             attention_value = torch.bmm(graph_output.permute(0, 2, 1).contiguous(), attention)  # batch_size, hidden_size, num_proposals
 
