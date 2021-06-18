@@ -116,12 +116,12 @@ class RefNet(nn.Module):
         data_dict = self.proposal(data_dict)
 
         if self.use_brnet:
-            data_dict = self.rpg_module(data_dict)
+            rpg_features = self.rpg_module(data_dict)
 
             # (B, 128+128, num_proposal)
             fused_feats = torch.cat(
                 (data_dict['aggregated_vote_features'].permute(0, 2, 1).contiguous(),
-                 data_dict["rpg_features"]), dim=1)
+                 rpg_features), dim=1)
 
             data_dict["fused_feats"] = fused_feats
 

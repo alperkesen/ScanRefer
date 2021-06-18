@@ -71,9 +71,7 @@ class RPGModule(nn.Module):
         # (batch_size, 128, num_proposal)
         features = self.reduce_dim(features)
 
-        data_dict["rpg_features"] = features
-
-        return data_dict
+        return features
 
     def _get_ray_based_rep_points(self, center, rois, angle, density=2):
         batch_size, num_proposal, _ = rois.shape  # (B, N, 6)
