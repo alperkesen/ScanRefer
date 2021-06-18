@@ -88,7 +88,7 @@ class MatchModule(nn.Module):
             features = features * objectness_masks
 
              # match
-             confidences = self.match(features).squeeze(1) # batch_size, num_proposals
+            confidences = self.match(features).squeeze(1) # batch_size, num_proposals
 
 
         data_dict["cluster_ref"] = confidences
