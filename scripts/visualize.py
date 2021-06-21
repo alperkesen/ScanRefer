@@ -22,9 +22,9 @@ from models.refnet import RefNet
 from data.scannet.model_util_scannet import ScannetDatasetConfig
 from lib.dataset import ScannetReferenceDataset
 from lib.solver import Solver
-from lib.ap_helper import APCalculator, parse_predictions, parse_groundtruths
-from lib.loss_helper import get_loss
-from lib.eval_helper import get_eval
+from lib.ap_helper import APCalculator, parse_predictions, parse_groundtruths, parse_predictions_brnet
+from lib.loss_helper import get_loss, loss_brnet
+from lib.eval_helper import get_eval, get_eval_brnet
 from lib.config import CONF
 
 # data
@@ -63,7 +63,8 @@ def get_model(args):
         num_size_cluster=DC.num_size_cluster,
         mean_size_arr=DC.mean_size_arr,
         num_proposal=args.num_proposals,
-        input_feature_dim=input_channels
+        input_feature_dim=input_channels,
+        use_brnet=args.use_brnet
     ).cuda()
 
     path = os.path.join(CONF.PATH.OUTPUT, args.folder, "model.pth")
@@ -441,19 +442,33 @@ def visualize(args):
         # feed
         data = model(data)
         # _, data = get_loss(data, DC, True, True, POST_DICT)
-        _, data = get_loss(
-            data_dict=data, 
-            config=DC, 
-            detection=True,
-            reference=True
-        )
-        data = get_eval(
-            data_dict=data, 
-            config=DC,
-            reference=True, 
-            post_processing=POST_DICT
-        )
-        
+        if not args.use_brnet:
+            _, data = get_loss(
+                data_dict=data, 
+                config=DC, 
+                detection=True,
+                reference=True
+            )
+            data = get_eval(
+                data_dict=data, 
+                config=DC,
+                reference=True, 
+                post_processing=POST_DICT
+            )
+        else:
+            _, data = loss_brnet(
+                data_dict=data, 
+                config=DC, 
+                detection=True,
+                reference=True
+            )
+            data = get_eval_brnet(
+                data_dict=data, 
+                config=DC,
+                reference=True, 
+                post_processing=POST_DICT
+            )
+            
         # visualize
         dump_results(args, scanrefer, data, DC)
 
@@ -475,6 +490,7 @@ if __name__ == "__main__":
     parser.add_argument('--use_color', action='store_true', help='Use RGB color in input.')
     parser.add_argument('--use_normal', action='store_true', help='Use RGB color in input.')
     parser.add_argument('--use_multiview', action='store_true', help='Use multiview images.')
+    parser.add_argument("--use_brnet", action="store_true", help="Use BRNet for object detection.")
     args = parser.parse_args()
 
     # setting
