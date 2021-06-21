@@ -402,14 +402,14 @@ def dump_results(args, scanrefer, data, config):
         
         # find the valid reference prediction
         pred_masks = nms_masks[i] * pred_objectness[i] == 1
-        if not args.brnet:
+        if not args.use_brnet:
             assert pred_ref_scores[i].shape[0] == pred_center[i].shape[0]
 
         pred_ref_idx = np.argmax(pred_ref_scores[i] * pred_masks, 0)
         assigned_gt = torch.gather(data["ref_box_label"], 1, data["object_assignment"]).detach().cpu().numpy()
 
         # visualize the predicted reference box
-        if not args.brnet:
+        if not args.use_brnet:
             pred_obb = config.param2obb(pred_center[i, pred_ref_idx, 0:3], pred_heading_class[i, pred_ref_idx], pred_heading_residual[i, pred_ref_idx],
                 pred_size_class[i, pred_ref_idx], pred_size_residual[i, pred_ref_idx])
         else:
