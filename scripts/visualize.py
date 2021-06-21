@@ -413,8 +413,8 @@ def dump_results(args, scanrefer, data, config):
             pred_obb = config.param2obb(pred_center[i, pred_ref_idx, 0:3], pred_heading_class[i, pred_ref_idx], pred_heading_residual[i, pred_ref_idx],
                 pred_size_class[i, pred_ref_idx], pred_size_residual[i, pred_ref_idx])
         else:
-            pred_obb = config.dist2obb(data_dict['refined_distance'][i, pred_ref_idx, 0:6],
-                                       data_dict['aggregated_vote_xyz'][i, pred_ref_idx, 0:3])
+            pred_obb = config.dist2obb(data['refined_distance'][i, pred_ref_idx, 0:6],
+                                       data['aggregated_vote_xyz'][i, pred_ref_idx, 0:3])
         pred_bbox = get_3d_box(pred_obb[3:6], pred_obb[6], pred_obb[0:3])
         iou = box3d_iou(gt_bbox, pred_bbox)
 
