@@ -339,15 +339,19 @@ def dump_results(args, scanrefer, data, config):
     
     # from network outputs
     # detection
+
+    if not args.use_brnet:
+        pred_center = data['center'].detach().cpu().numpy() # (B,K,3)
+        pred_size_class = torch.argmax(data['size_scores'], -1) # B,num_proposal
+        pred_size_residual = torch.gather(data['size_residuals'], 2, pred_size_class.unsqueeze(-1).unsqueeze(-1).repeat(1,1,1,3)) # B,num_proposal,1,3
+        pred_size_residual = pred_size_residual.squeeze(2).detach().cpu().numpy() # B,num_proposal,3
+
+
     pred_objectness = torch.argmax(data['objectness_scores'], 2).float().detach().cpu().numpy()
-    pred_center = data['center'].detach().cpu().numpy() # (B,K,3)
     pred_heading_class = torch.argmax(data['heading_scores'], -1) # B,num_proposal
     pred_heading_residual = torch.gather(data['heading_residuals'], 2, pred_heading_class.unsqueeze(-1)) # B,num_proposal,1
     pred_heading_class = pred_heading_class.detach().cpu().numpy() # B,num_proposal
     pred_heading_residual = pred_heading_residual.squeeze(2).detach().cpu().numpy() # B,num_proposal
-    pred_size_class = torch.argmax(data['size_scores'], -1) # B,num_proposal
-    pred_size_residual = torch.gather(data['size_residuals'], 2, pred_size_class.unsqueeze(-1).unsqueeze(-1).repeat(1,1,1,3)) # B,num_proposal,1,3
-    pred_size_residual = pred_size_residual.squeeze(2).detach().cpu().numpy() # B,num_proposal,3
     # reference
     pred_ref_scores = data["cluster_ref"].detach().cpu().numpy()
     pred_ref_scores_softmax = F.softmax(data["cluster_ref"] * torch.argmax(data['objectness_scores'], 2).float() * data['pred_mask'], dim=1).detach().cpu().numpy()
@@ -398,13 +402,19 @@ def dump_results(args, scanrefer, data, config):
         
         # find the valid reference prediction
         pred_masks = nms_masks[i] * pred_objectness[i] == 1
-        assert pred_ref_scores[i].shape[0] == pred_center[i].shape[0]
+        if not args.brnet:
+            assert pred_ref_scores[i].shape[0] == pred_center[i].shape[0]
+
         pred_ref_idx = np.argmax(pred_ref_scores[i] * pred_masks, 0)
         assigned_gt = torch.gather(data["ref_box_label"], 1, data["object_assignment"]).detach().cpu().numpy()
 
         # visualize the predicted reference box
-        pred_obb = config.param2obb(pred_center[i, pred_ref_idx, 0:3], pred_heading_class[i, pred_ref_idx], pred_heading_residual[i, pred_ref_idx],
+        if not args.brnet:
+            pred_obb = config.param2obb(pred_center[i, pred_ref_idx, 0:3], pred_heading_class[i, pred_ref_idx], pred_heading_residual[i, pred_ref_idx],
                 pred_size_class[i, pred_ref_idx], pred_size_residual[i, pred_ref_idx])
+        else:
+            pred_obb = config.dist2obb(data_dict['refined_distance'][i, pred_ref_idx, 0:6],
+                                       data_dict['aggregated_vote_xyz'][i, pred_ref_idx, 0:3])
         pred_bbox = get_3d_box(pred_obb[3:6], pred_obb[6], pred_obb[0:3])
         iou = box3d_iou(gt_bbox, pred_bbox)
 
