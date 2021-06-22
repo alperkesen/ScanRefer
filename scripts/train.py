@@ -72,6 +72,9 @@ def get_model(args):
             num_proposal=args.num_proposals,
             input_feature_dim=input_channels,
             use_bidir=args.use_bidir,
+            use_brnet=args.use_brnet,
+            use_cross_attn=args.use_cross_attn,
+            use_dgcnn=args.use_dgcnn,
             no_reference=True
         )
 
