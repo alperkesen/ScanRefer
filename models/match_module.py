@@ -20,7 +20,7 @@ class MatchModule(nn.Module):
             )
         else:
             self.fuse = nn.Sequential(
-                nn.Conv1d(self.lang_size + 128, hidden_size, 1),
+                nn.Conv1d(self.lang_size + 256, hidden_size, 1),
                 nn.ReLU()
             )
 
@@ -51,7 +51,7 @@ class MatchModule(nn.Module):
         """
 
         # unpack outputs from detection branch
-        features = data_dict['aggregated_vote_features'] # batch_size, num_proposal, 128
+        features = data_dict['fused_features'].permute(0, 2, 1).contiguous() # batch_size, num_proposal, 128
         objectness_masks = data_dict['objectness_scores'].max(2)[1].float().unsqueeze(2) # batch_size, num_proposals, 1
 
         # unpack outputs from language branch
